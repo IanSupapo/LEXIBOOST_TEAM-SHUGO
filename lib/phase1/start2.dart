@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shugo/phase1/Starting/starting.dart'; // Adjust the import paths as necessary 
-import 'package:shugo/phase2/home.dart';
+import 'package:shugo/phase2/home.dart'; 
 
 class MyStart2 extends StatefulWidget {
   const MyStart2({super.key}); 
