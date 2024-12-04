@@ -11,7 +11,7 @@ class _MyStartState extends State<MyStart> {
   @override
     void initState() {
       super.initState();
-      Future.delayed(const Duration(seconds: 5),() {
+      Future.delayed(const Duration(seconds: 5),() { 
         Navigator.pushNamed(context, '/start2');
       });
     }
