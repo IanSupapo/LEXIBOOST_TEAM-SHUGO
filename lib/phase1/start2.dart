@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shugo/phase1/Starting/starting.dart'; // Adjust the import paths as necessary 
 import 'package:shugo/phase2/home.dart'; 
 
-class MyStart2 extends StatefulWidget {
+class MyStart2 extends StatefulWidget { 
   const MyStart2({super.key}); 
  
   @override
