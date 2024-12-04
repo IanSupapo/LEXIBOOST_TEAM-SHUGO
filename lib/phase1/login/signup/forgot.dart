@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shugo/Reusable%20Widget/reusable_widget.dart';
 
 class MyForgot extends StatefulWidget {
-  const MyForgot({super.key});
+  const MyForgot({super.key}); 
 
   @override
   State<MyForgot> createState() => _MyForgotState();
