@@ -7,7 +7,7 @@ import 'package:shugo/phase1/Starting/starting.dart';
 import 'package:shugo/phase2/home.dart';
 
 class MyLogin extends StatefulWidget {
-  const MyLogin({super.key});
+  const MyLogin({super.key}); 
 
   @override
   State<MyLogin> createState() => _MyLoginState();
