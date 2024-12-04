@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "303696333249",
+    "project_id": "lexiboost-7de91",
+    "storage_bucket": "lexiboost-7de91.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:303696333249:android:073df7535bc1b041d60740",
+        "android_client_info": {
+          "package_name": "com.example.shugo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "303696333249-8kuu8r1e741apu7h3u3ulia5anaeg71g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.shugo",
+            "certificate_hash": "0a7df175f157c5cee3e655f8a916ecb2379a5ad9"
+          }
+        },
+        {
+          "client_id": "303696333249-r224rooe08ra8vjfb8jmo06rnguv4g15.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0MICtWDTp87TJt4q7u4VRrOJma7KEacE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "303696333249-r224rooe08ra8vjfb8jmo06rnguv4g15.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
