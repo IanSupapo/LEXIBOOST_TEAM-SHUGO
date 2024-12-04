@@ -22,11 +22,11 @@ class MyAchievement extends StatelessWidget {
       decoration: BoxDecoration(
         color: completed ? Colors.green.shade200 : Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 5,
-            offset: const Offset(2, 2),
+            offset: Offset(2, 2),
           ),
         ],
       ),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:animated_button/animated_button.dart';
+import 'package:shugo/phase2/achievement.dart';
 import 'package:shugo/phase2/mail.dart';
 import 'package:shugo/phase2/phase%202%20reusable/reusable1.dart';
 import 'package:shugo/phase2/settings.dart';
 import 'profile.dart';
 import 'rank.dart';
 import 'contact.dart';
-import 'achievement.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class MyHome extends StatefulWidget {
@@ -162,117 +162,108 @@ class MyHomePage extends StatelessWidget {
 
     // Calculate button dimensions based on screen size
     final buttonWidth = isLargeScreen ? 300.0 : screenWidth * 0.4; // 300 if large, otherwise 40% of screen width
-    final buttonHeight = isLargeScreen ? 620.0 : screenHeight * 0.4; // 620 if large, otherwise 40% of screen height
+    final buttonHeight = screenHeight * 0.5; // Set height to 20% of screen height
     final fontSize = isLargeScreen ? 24.0 : screenWidth * 0.05; // 24 if large, otherwise change with screen width
     final imageSize = isLargeScreen ? 150.0 : buttonWidth * 0.5; // 150 if large, otherwise change proportionally
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        // Top Text: "Lexi Boost"
-        const Padding(
-          padding: EdgeInsets.only(top: 20.0),
-          child: Text(
-            "Lexi Boost",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 64,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-              color: Colors.white,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Top Text: "Lexi Boost"
+          const Padding(
+            padding: EdgeInsets.only(bottom: 20.0),
+            child: Text(
+              "Lexi Boost",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 64,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
+                color: Colors.white,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 20), // Space between text and buttons
-        // Row of Buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Left Button: SOLO ADVENTURE
-            AnimatedButton(
-              width: buttonWidth, // Width dynamically set based on screen size
-              height: buttonHeight, // Height dynamically set based on screen size
-              onPressed: () {
-                print("SOLO ADVENTURE button pressed");
-
-                // Navigate to the solo adventure page
-                Navigator.pushNamed(context, '/solo');
-              },
-              color: Colors.white,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
-                    child: Text(
-                      "SOLO ADVENTURE",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+          // Row of Buttons: SOLO ADVENTURE and VERSUS MODE
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Button: SOLO ADVENTURE
+              AnimatedButton(
+                width: buttonWidth, // Width dynamically set based on screen size
+                height: buttonHeight, // Height dynamically set based on screen size
+                onPressed: () {
+                  print("SOLO ADVENTURE button pressed");
+                  Navigator.pushNamed(context, '/solo');
+                },
+                color: Colors.white,
+                shadowDegree: ShadowDegree.light,
+                enabled: true,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Text(
+                        "SOLO ADVENTURE",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Image(
-                        image: const AssetImage('assets/solo-traveller.gif'),
-                        width: imageSize, // Width changes proportionally
-                        height: imageSize, // Height changes proportionally
-                        fit: BoxFit.cover,
-                      ),
+                    Image(
+                      image: const AssetImage('assets/solo-traveller.gif'),
+                      width: imageSize, // Width changes proportionally
+                      height: imageSize, // Height changes proportionally
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              shadowDegree: ShadowDegree.light,
-              enabled: true,
-            ),
-            const SizedBox(width: 20), // Space between buttons
-            // Right Button: VERSUS MODE
-            AnimatedButton(
-              width: buttonWidth, // Width dynamically set based on screen size
-              height: buttonHeight, // Height dynamically set based on screen size
-              onPressed: () {
-                print("VERSUS MODE button pressed");
-                myHome.unlockAchievement(1);
-                Navigator.pushNamed(context, '/versus');
-              },
-              color: Colors.white,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
-                    child: Text(
-                      "VERSUS MODE",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+              const SizedBox(width: 20), // Space between buttons
+              // Button: VERSUS MODE
+              AnimatedButton(
+                width: buttonWidth, // Width dynamically set based on screen size
+                height: buttonHeight, // Height dynamically set based on screen size
+                onPressed: () {
+                  print("VERSUS MODE button pressed");
+                  myHome.unlockAchievement(1);
+                  Navigator.pushNamed(context, '/versus');
+                },
+                color: Colors.white,
+                shadowDegree: ShadowDegree.light,
+                enabled: true,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Text(
+                        "VERSUS MODE",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Image(
-                        image: const AssetImage('assets/players.gif'),
-                        width: imageSize, // Width changes proportionally
-                        height: imageSize, // Height changes proportionally
-                        fit: BoxFit.cover,
-                      ),
+                    Image(
+                      image: const AssetImage('assets/players.gif'),
+                      width: imageSize, // Width changes proportionally
+                      height: imageSize, // Height changes proportionally
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              shadowDegree: ShadowDegree.light,
-              enabled: true,
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

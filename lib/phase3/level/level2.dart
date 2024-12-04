@@ -10,6 +10,6 @@ class MyLevel2 extends StatefulWidget {
 class _MyLevel2State extends State<MyLevel2> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return const Scaffold();
   }
 }

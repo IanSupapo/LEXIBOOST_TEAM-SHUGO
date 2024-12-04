@@ -211,10 +211,10 @@ class _MyLevel1State extends State<MyLevel1> {
 
                     // DragTarget
                     DragTarget<String>(
-                      onAccept: (word) {
+                      onAcceptWithDetails: (word) {
                         setState(() {
                           if (!_selectedWords.contains(word)) {
-                            _selectedWords.add(word);
+                            _selectedWords.add(word as String);
                           }
                         });
                       },

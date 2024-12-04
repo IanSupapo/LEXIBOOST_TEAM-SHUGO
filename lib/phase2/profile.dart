@@ -179,7 +179,7 @@ class MyProfile extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(25.0),
-                                boxShadow: [
+                                boxShadow: const [
                                   BoxShadow(
                                     color: Colors.black26,
                                     blurRadius: 10,
@@ -192,7 +192,7 @@ class MyProfile extends StatelessWidget {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
+                                    const Text(
                                       'Edit Profile',
                                       style: TextStyle(
                                         fontSize: 20,
@@ -201,12 +201,12 @@ class MyProfile extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 16),
                                     TextField(
-                                      decoration: InputDecoration(
+                                      decoration: const InputDecoration(
                                         labelText: 'Fullname',
                                         border: OutlineInputBorder(),
                                       ),
                                       controller: TextEditingController(), // Use a controller to manage input
-                                      style: TextStyle(fontSize: 16),
+                                      style: const TextStyle(fontSize: 16),
                                       maxLines: 1,
                                     ),
                                     const SizedBox(height: 16),
@@ -220,13 +220,13 @@ class MyProfile extends StatelessWidget {
                     },
                     height: 50,
                     width: 50,
+                    color: Colors.blueAccent,
+                    shadowDegree: ShadowDegree.dark,
                     child: Image.asset(
                       'assets/edit.png',
                       width: 30,
                       height: 30,
                     ),
-                    color: Colors.blueAccent,
-                    shadowDegree: ShadowDegree.dark,
                   ),
                 ),
               ],

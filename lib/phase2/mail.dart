@@ -41,7 +41,7 @@ class MyMail extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(vertical: 8.0),
                   color: Colors.white,
                   child: ListTile(
-                    leading: Icon(
+                    leading: const Icon(
                       Icons.notifications,
                       color: Colors.blueAccent,
                     ),
