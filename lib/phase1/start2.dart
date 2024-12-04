@@ -7,7 +7,7 @@ import 'package:shugo/phase2/home.dart';
 
 class MyStart2 extends StatefulWidget {
   const MyStart2({super.key});
-
+ 
   @override
   State<MyStart2> createState() => _MyStart2State();
 }
