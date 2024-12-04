@@ -84,7 +84,8 @@ class _MySignupState extends State<MySignup> {
           'trophy': null,
           'gender': null,
           'birthday': null,
-          'createdAt': FieldValue.serverTimestamp(), // Add the registration date
+          'createdAt': FieldValue.serverTimestamp(),
+           // Add the registration date
         });
 
         // Navigate to MyStarting screen
