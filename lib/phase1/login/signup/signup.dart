@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shugo/Reusable%20Widget/reusable_widget.dart';
+import 'package:shugo/Reusable%20Widget/reusable_widget.dart'; 
 import 'package:shugo/phase1/Starting/starting.dart';
 import 'package:shugo/phase2/home.dart';
 
