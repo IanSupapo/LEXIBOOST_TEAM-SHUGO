@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"name": "LEXIBOOST_TEAM-SHUGO",
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "interactive",
+		"cmake.sourceDirectory": "C:/Users/itski/shugo/linux"
+	}
+}

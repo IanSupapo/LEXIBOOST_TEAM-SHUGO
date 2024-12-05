@@ -29,9 +29,9 @@ class _MySoloState extends State<MySolo> {
                   levelText: 'Level 1',
                   descriptionText: 'Beginner',
                   gifPath: 'assets/toy.gif',
-                  modalText: "Welcome to Level 1!",
+                  modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "Welcome to Level 1!");
+                    showModal(context, "");
                   },
                 ).build(context),
               ),
@@ -41,9 +41,9 @@ class _MySoloState extends State<MySolo> {
                   levelText: 'Level 2',
                   descriptionText: 'Beginner II',
                   gifPath: 'assets/cubes.gif',
-                  modalText: "Prepare for Level 2!",
+                  modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "Prepare for Level 2!");
+                    showModal(context, "");
                   },
                 ).build(context),
               ),
@@ -53,9 +53,9 @@ class _MySoloState extends State<MySolo> {
                   levelText: 'Level 3',
                   descriptionText: 'Boss',
                   gifPath: 'assets/bear.gif',
-                  modalText: "Get ready for the Boss Level!",
+                  modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "Get ready for the Boss Level!");
+                    showModal(context, "");
                   },
                 ).build(context),
               ),
@@ -165,17 +165,25 @@ class _MySoloState extends State<MySolo> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  modalText,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
                 const SizedBox(height: 20),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        modalText, // Use modalText parameter here
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                // Close button moved to the bottom
                 AnimatedButton(
                   onPressed: () {
                     Navigator.of(context).pop(); // Close the modal
@@ -187,9 +195,10 @@ class _MySoloState extends State<MySolo> {
                     "Close",
                     style: TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 16,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                      decoration: TextDecoration.none, // Remove underline
                     ),
                   ),
                 ),

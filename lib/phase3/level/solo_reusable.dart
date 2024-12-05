@@ -88,33 +88,100 @@ class CustomReusable {
                       ],
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 20),
+                        // Level title changes dynamically based on levelText
                         Text(
-                          modalText, // Use modalText parameter here
+                          levelText,
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
+                            decoration: TextDecoration.none,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 20),
-                        AnimatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(); // Close the modal
-                          },
-                          height: MediaQuery.of(context).size.height * 0.1,
-                          width: MediaQuery.of(context).size.width * 0.3,
-                          color: Colors.blue.shade300,
-                          child: const Text(
-                            "Close",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                        const SizedBox(height: 10),
+                        // Description text changes dynamically based on levelText
+                        Text(
+                          "Continue to play $levelText?",
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            decoration: TextDecoration.none,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 50),
+                        // Centered GIF image in the modal
+                        Image.asset(
+                          gifPath,
+                          width: MediaQuery.of(context).size.width * 0.2,
+                          height: MediaQuery.of(context).size.height * 0.2,
+                          fit: BoxFit.contain,
+                        ),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                modalText, // Use modalText parameter here
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Add some space above the buttons
+                        // Play button above the Close button without triggering another modal
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10.0),
+                          child: AnimatedButton(
+                            onPressed: () {
+
+                            },
+                            height: MediaQuery.of(context).size.height * 0.07,
+                            width: MediaQuery.of(context).size.width * 0.3,
+                            color: Colors.blue.shade300,
+                            child: const Text(
+                              "Play",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Close button at the bottom with padding
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 20.0),
+                          child: AnimatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the modal
+                            },
+                            height: MediaQuery.of(context).size.height * 0.07,
+                            width: MediaQuery.of(context).size.width * 0.3,
+                            color: Colors.blue.shade300,
+                            child: const Text(
+                              "Close",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                decoration: TextDecoration.none, // Remove underline
+                              ),
                             ),
                           ),
                         ),
@@ -128,9 +195,9 @@ class CustomReusable {
           height: MediaQuery.of(context).size.height * 0.1,
           width: MediaQuery.of(context).size.width * 0.7,
           color: const Color(0xFFDAFEFC),
-          child: const Text(
-            'Play',
-            style: TextStyle(
+          child: Text(
+            'Play $levelText',
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 30,
               fontWeight: FontWeight.bold,
