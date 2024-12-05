@@ -28,8 +28,9 @@ class _MyStarting4State extends State<MyStarting4> {
       // Add a new document to the 'player' collection
       await _firestore.collection('player').doc(user.uid).set({
         'uid': user.uid,
-        'points': null,
-        'rank': null,
+        'points': 0,
+        'rank': 0,
+        'trophy': 0,
         'player_id': playerId,
         'createdAt': FieldValue.serverTimestamp(),
       });

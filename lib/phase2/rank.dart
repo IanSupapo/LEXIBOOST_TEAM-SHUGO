@@ -56,10 +56,15 @@ class MyRank extends StatelessWidget {
                         .get(),
                     builder: (context, playerSnapshot) {
                       String playerId = 'No ID';
+                      int points = 0;
+                      int trophy = 0;
+
                       if (playerSnapshot.connectionState == ConnectionState.done) {
                         if (playerSnapshot.hasData && playerSnapshot.data!.docs.isNotEmpty) {
                           final playerData = playerSnapshot.data!.docs.first.data() as Map<String, dynamic>;
                           playerId = playerData['player_id']?.toString() ?? 'No ID';
+                          points = playerData['points'] ?? 0;
+                          trophy = playerData['trophy'] ?? 0;
                         }
                       }
 
@@ -87,6 +92,7 @@ class MyRank extends StatelessWidget {
                                   ),
                                 ),
                                 Expanded(
+                                  flex: 2,
                                   child: ListTile(
                                     contentPadding: EdgeInsets.zero,
                                     leading: SizedBox(
@@ -123,6 +129,44 @@ class MyRank extends StatelessWidget {
                                         fontSize: subtitleFontSize,
                                       ),
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(right: screenWidth * 0.02),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Image.asset(
+                                          'assets/medal.png',
+                                          height: imageSize * 0.5,
+                                          width: imageSize * 0.5,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          '$points',
+                                          style: TextStyle(
+                                            fontSize: subtitleFontSize,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(width: 16),
+                                        Image.asset(
+                                          'assets/Trophy2.png',
+                                          height: imageSize * 0.5,
+                                          width: imageSize * 0.5,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          '$trophy',
+                                          style: TextStyle(
+                                            fontSize: subtitleFontSize,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),

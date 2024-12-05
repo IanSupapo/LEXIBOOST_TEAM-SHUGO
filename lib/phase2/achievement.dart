@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyAchievement extends StatelessWidget {
   MyAchievement({super.key});
@@ -91,6 +93,8 @@ class MyAchievement extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
       appBar: AppBar(
@@ -105,15 +109,200 @@ class MyAchievement extends StatelessWidget {
         ),
         automaticallyImplyLeading: false, // Remove the back button
       ),
-      body: const Center(
-        child: Text(
-          "No achievements available",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            color: Colors.white,
-          ),
-        ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('achievements')
+            .orderBy('position', descending: false)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+              child: Text(
+                "No achievements available",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 24,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }
+
+          return RawScrollbar(
+            thumbVisibility: false, // Hide scrollbar when not scrolling
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: snapshot.data!.docs.length,
+              itemBuilder: (context, index) {
+                final achievement = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                final achievementId = snapshot.data!.docs[index].id;
+                final bool isClaimable = achievement['isClaimable'] ?? false;
+                final bool isCompleted = achievement['completedBy']?.contains(userId) ?? false;
+
+                return Container(
+                  width: 400,
+                  height: 110,
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isCompleted ? Colors.green.shade200 : Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 5,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Circle container for the image
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isCompleted ? Colors.green : Colors.blue.shade100,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: achievement['imageBase64'] != null && achievement['imageBase64'].isNotEmpty
+                              ? Image.memory(
+                                  base64Decode(achievement['imageBase64']),
+                                  fit: BoxFit.contain,
+                                )
+                              : Icon(Icons.emoji_events, color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      // Text section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              achievement['title'] ?? 'No Title',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              achievement['description'] ?? 'No Description',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Points and Claim Button
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${achievement['points']} pts',
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          if (!isCompleted && isClaimable)
+                            InkWell(
+                              onTap: () async {
+                                try {
+                                  // Show loading indicator
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+
+                                  // Update achievement
+                                  await FirebaseFirestore.instance
+                                      .collection('achievements')
+                                      .doc(achievementId)
+                                      .update({
+                                    'completedBy': FieldValue.arrayUnion([userId])
+                                  });
+
+                                  // Close loading indicator
+                                  Navigator.pop(context);
+
+                                  // Show success message
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Achievement claimed successfully!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  // Close loading indicator
+                                  Navigator.pop(context);
+                                  
+                                  // Show error message
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error claiming achievement: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: const Text(
+                                  'Claim',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (isCompleted)
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 30,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }

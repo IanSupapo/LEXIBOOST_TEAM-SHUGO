@@ -18,8 +18,7 @@ import 'package:shugo/phase2/mail.dart';
 import 'package:shugo/phase2/profile.dart';
 import 'package:shugo/phase2/rank.dart';
 import 'package:shugo/phase2/settings.dart';
-import 'package:shugo/phase3/level/level1.dart';
-import 'package:shugo/phase3/level/level2.dart';
+import 'package:shugo/phase3/level/play1.dart';
 import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
 
@@ -80,8 +79,7 @@ class MyApp extends StatelessWidget {
         '/mail' : (context) => const MyMail(notifications: [],),
         '/solo' : (context) => const MySolo(),
         '/versus' : (context) => const MyVersus(),
-        '/level1' : (context) => const MyLevel1(),
-        '/level2' : (context) => const MyLevel2(),
+        '/play1' : (context) => const MyPlay1(),
 
 
 

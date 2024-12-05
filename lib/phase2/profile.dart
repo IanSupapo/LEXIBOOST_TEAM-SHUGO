@@ -149,7 +149,7 @@ class _MyProfileState extends State<MyProfile> {
                           child: StreamBuilder<DocumentSnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('users')
-                                .doc(currentUser!.uid)
+                                .doc(currentUser.uid)
                                 .snapshots(),
                             builder: (context, snapshot) {
                               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -258,7 +258,7 @@ class _MyProfileState extends State<MyProfile> {
                           // Get current user data
                           FirebaseFirestore.instance
                               .collection('users')
-                              .doc(currentUser!.uid)
+                              .doc(currentUser.uid)
                               .get()
                               .then((doc) {
                             if (doc.exists) {
@@ -343,7 +343,7 @@ class _MyProfileState extends State<MyProfile> {
 
                                               await firestore
                                                   .collection('users')
-                                                  .doc(currentUser!.uid)
+                                                  .doc(currentUser.uid)
                                                   .update(updates);
 
                                               print('Profile updated successfully');
