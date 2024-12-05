@@ -10,6 +10,8 @@ class MySettings extends StatefulWidget {
 }
 
 class _MySettingsState extends State<MySettings> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,77 +32,94 @@ class _MySettingsState extends State<MySettings> {
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // DividerButton replaced with AnimatedButton
-              AnimatedDividerButton(
-                text: "Features",
-                onTap: () {
-                  // Add navigation or action here
+          child: RawScrollbar(
+            controller: _scrollController,
+            thumbVisibility: false,
+            thickness: 0,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Container(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height * 0.6,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // DividerButton replaced with AnimatedButton
+                        AnimatedDividerButton(
+                          text: "Features",
+                          onTap: () {
+                            // Add navigation or action here
+                          },
+                        ),
+                        const Divider(
+                          thickness: 1,
+                          color: Colors.grey,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                        AnimatedDividerButton(
+                          text: "Guidelines",
+                          onTap: () {
+                            // Add navigation or action here
+                          },
+                        ),
+                        const Divider(
+                          thickness: 1,
+                          color: Colors.grey,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                        AnimatedDividerButton(
+                          text: "Account Settings",
+                          onTap: () {
+                            // Add navigation or action here
+                          },
+                        ),
+                        const Divider(
+                          thickness: 1,
+                          color: Colors.grey,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                        AnimatedDividerButton(
+                          text: "Privacy Policy",
+                          onTap: () {
+                            // Add navigation or action here
+                          },
+                        ),
+                        const Divider(
+                          thickness: 1,
+                          color: Colors.grey,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                        AnimatedDividerButton(
+                          text: "Terms of Service",
+                          onTap: () {
+                            // Add navigation or action here
+                          },
+                        ),
+                        const Divider(
+                          thickness: 1,
+                          color: Colors.grey,
+                          indent: 20,
+                          endIndent: 20,
+                        ),
+                        AnimatedDividerButton(
+                          text: "Exit",
+                          onTap: () {
+                            _showExitConfirmation(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
-              const Divider(
-                thickness: 1,
-                color: Colors.grey,
-                indent: 20,
-                endIndent: 20,
-              ),
-              AnimatedDividerButton(
-                text: "Guidelines",
-                onTap: () {
-                  // Add navigation or action here
-                },
-              ),
-              const Divider(
-                thickness: 1,
-                color: Colors.grey,
-                indent: 20,
-                endIndent: 20,
-              ),
-              AnimatedDividerButton(
-                text: "Account Settings",
-                onTap: () {
-                  // Add navigation or action here
-                },
-              ),
-              const Divider(
-                thickness: 1,
-                color: Colors.grey,
-                indent: 20,
-                endIndent: 20,
-              ),
-              AnimatedDividerButton(
-                text: "Privacy Policy",
-                onTap: () {
-                  // Add navigation or action here
-                },
-              ),
-              const Divider(
-                thickness: 1,
-                color: Colors.grey,
-                indent: 20,
-                endIndent: 20,
-              ),
-              AnimatedDividerButton(
-                text: "Terms of Service",
-                onTap: () {
-                  // Add navigation or action here
-                },
-              ),
-              const Divider(
-                thickness: 1,
-                color: Colors.grey,
-                indent: 20,
-                endIndent: 20,
-              ),
-              AnimatedDividerButton(
-                text: "Exit",
-                onTap: () {
-                  _showExitConfirmation(context);
-                },
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -163,6 +182,12 @@ class _MySettingsState extends State<MySettings> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 

@@ -64,39 +64,106 @@ class _MySignupState extends State<MySignup> {
     });
 
     try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final User? user = userCredential.user;
       if (user != null) {
-        final String uid = user.uid;
+        // Send email verification
+        await user.sendEmailVerification();
 
-        // Add createdAt field with the current timestamp
-        await _firestore.collection('users').doc(uid).set({
+        // Store user data in Firestore
+        await _firestore.collection('users').doc(user.uid).set({
           'email': email,
-          'uid': uid.isNotEmpty ? uid : "TestUID",
+          'uid': user.uid,
           'fullname': null,
           'description': null,
           'points': null,
           'trophy': null,
           'gender': null,
           'birthday': null,
+          'emailVerified': false,
           'createdAt': FieldValue.serverTimestamp(),
-           // Add the registration date
         });
 
-        // Navigate to MyStarting screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MyStarting()),
-        );
+        // Show verification dialog
+        _showVerificationDialog();
       }
     } catch (e) {
       print("Error during Email Sign-Up: $e");
       _showDialog("Sign-Up Error", "An error occurred during sign-up. Please try again.");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showVerificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Verify Your Email"),
+          content: const Text(
+            "A verification link has been sent to your email address. Please verify your email to continue.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _checkEmailVerification();
+              },
+              child: const Text("I've Verified My Email"),
+            ),
+            TextButton(
+              onPressed: () {
+                // Sign out the user and return to login
+                FirebaseAuth.instance.signOut();
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+              child: const Text("Later"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _checkEmailVerification() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Reload the user to get the latest verification status
+      await FirebaseAuth.instance.currentUser?.reload();
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null && user.emailVerified) {
+        // Update verification status in Firestore
+        await _firestore.collection('users').doc(user.uid).update({
+          'emailVerified': true,
+        });
+
+        // Navigate to starting screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyStarting()),
+        );
+      } else {
+        _showDialog(
+          "Email Not Verified",
+          "Please verify your email first. Check your inbox and spam folder.",
+        );
+      }
+    } catch (e) {
+      print("Error checking email verification: $e");
+      _showDialog("Error", "An error occurred. Please try again.");
     } finally {
       setState(() {
         _isLoading = false;
@@ -161,9 +228,12 @@ class _MySignupState extends State<MySignup> {
           }
         } else {
           await _firestore.collection('users').doc(user.uid).set({
+            'email': user.email,
             'fullname': null,
             'gender': null,
             'birthday': null,
+            'description': null,
+            'uid': user.uid,
             'createdAt': FieldValue.serverTimestamp(), // Add the registration date
           });
           Navigator.pushReplacement(

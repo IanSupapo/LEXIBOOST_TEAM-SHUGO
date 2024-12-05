@@ -126,9 +126,13 @@ class _MyLoginState extends State<MyLogin> {
             }
           } else {
             await _firestore.collection('users').doc(user.uid).set({
-              'fullname': null,
-              'gender': null,
-              'birthday': null,
+            'email': user.email,
+            'fullname': null,
+            'gender': null,
+            'birthday': null,
+            'description': null,
+            'uid': user.uid,
+            'createdAt': FieldValue.serverTimestamp(), // Add the registration date
             });
             Navigator.pushReplacement(
               context,
