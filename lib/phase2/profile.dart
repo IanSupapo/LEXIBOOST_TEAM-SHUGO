@@ -273,7 +273,7 @@ class _MyProfileState extends State<MyProfile> {
                                 elevation: 16,
                                 child: Container(
                                   width: MediaQuery.of(context).size.width * 0.6,
-                                  height: MediaQuery.of(context).size.height * 0.8,
+                                  height: MediaQuery.of(context).size.height * 0.5,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(25.0),
@@ -314,8 +314,10 @@ class _MyProfileState extends State<MyProfile> {
                                         ),
                                         const SizedBox(height: 16),
                                         ElevatedButton(
+                                           
                                           onPressed: () => pickImageWeb(isBackground: false),
                                           child: const Text('Upload Image'),
+                                          
                                         ),
                                         const SizedBox(height: 16),
                                         ElevatedButton(
