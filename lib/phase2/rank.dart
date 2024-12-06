@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyRank extends StatelessWidget {
   const MyRank({super.key});
@@ -15,6 +16,8 @@ class MyRank extends StatelessWidget {
     final titleFontSize = containerHeight * 0.20;
     final subtitleFontSize = containerHeight * 0.15;
 
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
       body: Padding(
@@ -37,44 +40,70 @@ class MyRank extends StatelessWidget {
               }
 
               final users = snapshot.data!.docs;
-              return ListView.builder(
-                padding: EdgeInsets.symmetric(
-                  vertical: containerHeight * 0.05,
-                  horizontal: screenWidth * 0.025,
-                ),
-                itemCount: users.length,
-                itemBuilder: (context, index) {
-                  final user = users[index].data() as Map<String, dynamic>;
-                  final fullName = user['fullname'] ?? 'No Name';
-                  final userId = users[index].id;
-                  final imageBase64 = user['image'] ?? '';
+              
+              // Create a list to store user data with their points and trophies
+              List<Future<Map<String, dynamic>>> userDataFutures = users.map((user) async {
+                final userData = user.data() as Map<String, dynamic>;
+                final userId = user.id;
+                
+                // Get player data
+                final playerSnapshot = await FirebaseFirestore.instance
+                    .collection('player')
+                    .where('uid', isEqualTo: userId)
+                    .get();
+                
+                int points = 0;
+                int trophy = 0;
+                String playerId = 'No ID';
+                
+                if (playerSnapshot.docs.isNotEmpty) {
+                  final playerData = playerSnapshot.docs.first.data();
+                  points = playerData['points'] ?? 0;
+                  trophy = playerData['trophy'] ?? 0;
+                  playerId = playerData['player_id']?.toString() ?? 'No ID';
+                }
 
-                  return FutureBuilder<QuerySnapshot>(
-                    future: FirebaseFirestore.instance
-                        .collection('player')
-                        .where('uid', isEqualTo: userId)
-                        .get(),
-                    builder: (context, playerSnapshot) {
-                      String playerId = 'No ID';
-                      int points = 0;
-                      int trophy = 0;
+                return {
+                  'userId': userId,
+                  'fullName': userData['fullname'] ?? 'No Name',
+                  'imageBase64': userData['image'] ?? '',
+                  'points': points,
+                  'trophy': trophy,
+                  'playerId': playerId,
+                };
+              }).toList();
 
-                      if (playerSnapshot.connectionState == ConnectionState.done) {
-                        if (playerSnapshot.hasData && playerSnapshot.data!.docs.isNotEmpty) {
-                          final playerData = playerSnapshot.data!.docs.first.data() as Map<String, dynamic>;
-                          playerId = playerData['player_id']?.toString() ?? 'No ID';
-                          points = playerData['points'] ?? 0;
-                          trophy = playerData['trophy'] ?? 0;
-                        }
-                      }
+              return FutureBuilder<List<Map<String, dynamic>>>(
+                future: Future.wait(userDataFutures),
+                builder: (context, usersDataSnapshot) {
+                  if (!usersDataSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
+                  // Sort users by points (descending) and then by trophies (descending)
+                  final sortedUsers = usersDataSnapshot.data!..sort((a, b) {
+                    int pointsCompare = b['points'].compareTo(a['points']);
+                    if (pointsCompare != 0) return pointsCompare;
+                    return b['trophy'].compareTo(a['trophy']);
+                  });
+
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(
+                      vertical: containerHeight * 0.05,
+                      horizontal: screenWidth * 0.025,
+                    ),
+                    itemCount: sortedUsers.length,
+                    itemBuilder: (context, index) {
+                      final userData = sortedUsers[index];
+                      final isCurrentUser = userData['userId'] == currentUserId;
+                      
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 8.0),
                         child: Container(
                           width: screenWidth * 0.95,
                           height: containerHeight,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: isCurrentUser ? Colors.green.shade200 : Colors.white,
                             borderRadius: BorderRadius.circular(35),
                           ),
                           child: SizedBox(
@@ -88,6 +117,7 @@ class MyRank extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: titleFontSize,
                                       fontWeight: FontWeight.bold,
+                                      color: isCurrentUser ? Colors.black : Colors.black,
                                     ),
                                   ),
                                 ),
@@ -98,11 +128,11 @@ class MyRank extends StatelessWidget {
                                     leading: SizedBox(
                                       width: imageSize,
                                       height: imageSize,
-                                      child: imageBase64.isNotEmpty
+                                      child: userData['imageBase64'].isNotEmpty
                                           ? CircleAvatar(
                                               radius: imageSize / 2,
                                               backgroundImage: MemoryImage(
-                                                base64Decode(imageBase64.split(',').last),
+                                                base64Decode(userData['imageBase64'].split(',').last),
                                               ),
                                             )
                                           : CircleAvatar(
@@ -116,7 +146,7 @@ class MyRank extends StatelessWidget {
                                             ),
                                     ),
                                     title: Text(
-                                      fullName,
+                                      userData['fullName'],
                                       style: TextStyle(
                                         fontSize: titleFontSize,
                                         fontWeight: FontWeight.bold,
@@ -124,7 +154,7 @@ class MyRank extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     subtitle: Text(
-                                      'ID: $playerId',
+                                      'ID: ${userData['playerId']}',
                                       style: TextStyle(
                                         fontSize: subtitleFontSize,
                                       ),
@@ -146,7 +176,7 @@ class MyRank extends StatelessWidget {
                                         ),
                                         SizedBox(width: 4),
                                         Text(
-                                          '$points',
+                                          '${userData['points']}',
                                           style: TextStyle(
                                             fontSize: subtitleFontSize,
                                             fontWeight: FontWeight.bold,
@@ -160,7 +190,7 @@ class MyRank extends StatelessWidget {
                                         ),
                                         SizedBox(width: 4),
                                         Text(
-                                          '$trophy',
+                                          '${userData['trophy']}',
                                           style: TextStyle(
                                             fontSize: subtitleFontSize,
                                             fontWeight: FontWeight.bold,

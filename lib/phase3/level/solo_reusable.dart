@@ -115,7 +115,7 @@ class CustomReusable {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 50),
+                        const SizedBox(height: 30),
                         // Centered GIF image in the modal
                         Image.asset(
                           gifPath,
@@ -146,7 +146,8 @@ class CustomReusable {
                           padding: const EdgeInsets.only(bottom: 10.0),
                           child: AnimatedButton(
                             onPressed: () {
-
+                              Navigator.of(context).pop(); // Close the modal
+                              onPlayPressed(); // Call the onPlayPressed callback to navigate
                             },
                             height: MediaQuery.of(context).size.height * 0.07,
                             width: MediaQuery.of(context).size.width * 0.3,

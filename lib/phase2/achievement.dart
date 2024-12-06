@@ -212,7 +212,7 @@ class MyAchievement extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Points and Claim Button
+                      // Points section
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -226,68 +226,7 @@ class MyAchievement extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 5),
-                          if (!isCompleted && isClaimable)
-                            InkWell(
-                              onTap: () async {
-                                try {
-                                  // Show loading indicator
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-
-                                  // Update achievement
-                                  await FirebaseFirestore.instance
-                                      .collection('achievements')
-                                      .doc(achievementId)
-                                      .update({
-                                    'completedBy': FieldValue.arrayUnion([userId])
-                                  });
-
-                                  // Close loading indicator
-                                  Navigator.pop(context);
-
-                                  // Show success message
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Achievement claimed successfully!'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                } catch (e) {
-                                  // Close loading indicator
-                                  Navigator.pop(context);
-                                  
-                                  // Show error message
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error claiming achievement: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue,
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                                child: const Text(
-                                  'Claim',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
+                          // Only show checkmark if completed
                           if (isCompleted)
                             const Icon(
                               Icons.check_circle,

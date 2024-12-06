@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animated_button/animated_button.dart';
 import 'package:shugo/phase3/level/solo_reusable.dart';
+import 'package:shugo/phase3/level/play1.dart';
 
 class MySolo extends StatefulWidget {
   const MySolo({super.key});
@@ -31,7 +32,7 @@ class _MySoloState extends State<MySolo> {
                   gifPath: 'assets/toy.gif',
                   modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "");
+                    Navigator.pushNamed(context, '/play1');
                   },
                 ).build(context),
               ),
@@ -158,7 +159,7 @@ class _MySoloState extends State<MySolo> {
                   color: Colors.black.withOpacity(0.5),
                   spreadRadius: 2,
                   blurRadius: 10,
-                  offset: const Offset(0, 4), // Shadow position
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -171,7 +172,7 @@ class _MySoloState extends State<MySolo> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        modalText, // Use modalText parameter here
+                        modalText,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 24,
@@ -180,13 +181,35 @@ class _MySoloState extends State<MySolo> {
                         ),
                         textAlign: TextAlign.center,
                       ),
+                      const SizedBox(height: 20),
+                      AnimatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const MyPlay1()),
+                          );
+                        },
+                        height: MediaQuery.of(context).size.height * 0.1,
+                        width: MediaQuery.of(context).size.width * 0.3,
+                        color: Colors.green,
+                        child: const Text(
+                          "Play",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                // Close button moved to the bottom
                 AnimatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the modal
+                    Navigator.of(context).pop();
                   },
                   height: MediaQuery.of(context).size.height * 0.1,
                   width: MediaQuery.of(context).size.width * 0.3,
@@ -198,7 +221,7 @@ class _MySoloState extends State<MySolo> {
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      decoration: TextDecoration.none, // Remove underline
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
