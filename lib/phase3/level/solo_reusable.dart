@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animated_button/animated_button.dart';
+import 'package:shugo/phase3/level/play2.dart';
 
 class CustomReusable {
   final String levelText;
@@ -147,7 +148,14 @@ class CustomReusable {
                           child: AnimatedButton(
                             onPressed: () {
                               Navigator.of(context).pop(); // Close the modal
-                              onPlayPressed(); // Call the onPlayPressed callback to navigate
+                              if (levelText == 'Level 2') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const MyPlay2()),
+                                );
+                              } else {
+                                onPlayPressed(); // Use the default callback for other levels
+                              }
                             },
                             height: MediaQuery.of(context).size.height * 0.07,
                             width: MediaQuery.of(context).size.width * 0.3,

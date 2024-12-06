@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animated_button/animated_button.dart';
 import 'package:shugo/phase3/level/solo_reusable.dart';
 import 'package:shugo/phase3/level/play1.dart';
+import 'package:shugo/phase3/level/play2.dart';
 
 class MySolo extends StatefulWidget {
   const MySolo({super.key});
@@ -44,7 +45,10 @@ class _MySoloState extends State<MySolo> {
                   gifPath: 'assets/cubes.gif',
                   modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MyPlay2()),
+                    );
                   },
                 ).build(context),
               ),
@@ -143,7 +147,7 @@ class _MySoloState extends State<MySolo> {
     );
   }
 
-  void showModal(BuildContext context, String modalText) {
+  void showModal(BuildContext context, String modalText, {bool isLevel2 = false}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -187,7 +191,11 @@ class _MySoloState extends State<MySolo> {
                           Navigator.pop(context);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const MyPlay1()),
+                            MaterialPageRoute(
+                              builder: (context) => isLevel2 
+                                ? const MyPlay2() 
+                                : const MyPlay1(),
+                            ),
                           );
                         },
                         height: MediaQuery.of(context).size.height * 0.1,
