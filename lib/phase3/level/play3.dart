@@ -2,23 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
-import 'package:audioplayers/audioplayers.dart';
 
-class MyPlay2 extends StatefulWidget {
-  const MyPlay2({super.key});
+class MyPlay3 extends StatefulWidget {
+  const MyPlay3({super.key});
 
   @override
-  State<MyPlay2> createState() => _MyPlay2State();
+  State<MyPlay3> createState() => _MyPlay3State();
 }
 
-class _MyPlay2State extends State<MyPlay2> {
+class _MyPlay3State extends State<MyPlay3> {
   int health = 5;
   int currentQuestionIndex = 0;
   List<Map<String, dynamic>> questions = [];
   String? selectedAnswer;
   bool isLoading = true;
   OverlayEntry? overlayEntry;
-  final AudioPlayer audioPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -28,7 +26,7 @@ class _MyPlay2State extends State<MyPlay2> {
 
   Future<void> fetchQuestions() async {
     final querySnapshot = await FirebaseFirestore.instance
-        .collection('level2')
+        .collection('level3')
         .orderBy(FieldPath.documentId)
         .get();
     
@@ -38,20 +36,36 @@ class _MyPlay2State extends State<MyPlay2> {
     });
   }
 
-  Future<void> playAudio(String base64Audio) async {
-    try {
-      final bytes = base64Decode(base64Audio);
-      final source = BytesSource(bytes);
-      await audioPlayer.play(source);
-    } catch (e) {
-      print('Error playing audio: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (isLoading || questions.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.blue,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    final currentQuestion = questions[currentQuestionIndex];
+    final options = currentQuestion['options'] as List?;
+    
+    if (options == null || options.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.blue,
+        body: Center(
+          child: Text(
+            'Error loading question data',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Poppins',
+              fontSize: 18,
+            ),
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -76,73 +90,71 @@ class _MyPlay2State extends State<MyPlay2> {
               ),
             ),
 
-            const Text(
-              'Tap what you hear',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-
-            // Audio play buttons
+            // Question Text
             Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      playAudio(questions[currentQuestionIndex]['audioBase64']);
-                    },
-                    icon: const Icon(Icons.volume_up),
-                    iconSize: 48,
-                    color: Colors.white,
-                  ),
-                ],
+              child: Text(
+                currentQuestion['question'] ?? 'No question available',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
 
-            // Answer options
+            // Image Options in 2x2 Grid
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: (questions[currentQuestionIndex]['options'] as List)
-                      .map((option) => GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedAnswer = option;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: selectedAnswer == option
-                                ? Colors.blue.shade700
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            option,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              color: selectedAnswer == option
-                                  ? Colors.white
-                                  : Colors.black,
+                child: Center(
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    child: GridView.count(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 20,
+                      crossAxisSpacing: 20,
+                      childAspectRatio: 1,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: List.generate(options.length, (index) {
+                        final option = options[index];
+                        if (option == null) return const SizedBox();
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedAnswer = option['id'];
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(35),
+                              border: Border.all(
+                                color: selectedAnswer == option['id']
+                                    ? Colors.blue.shade700
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: option['imageBase64'] != null
+                                  ? Image.memory(
+                                      base64Decode(option['imageBase64']),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const Icon(Icons.image_not_supported),
                             ),
                           ),
-                        ),
-                      ))
-                      .toList(),
+                        );
+                      }),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -174,11 +186,10 @@ class _MyPlay2State extends State<MyPlay2> {
   void checkAnswer() {
     if (selectedAnswer == null) return;
 
-    if (selectedAnswer == questions[currentQuestionIndex]['correctWord']) {
+    if (selectedAnswer == questions[currentQuestionIndex]['correctAnswer']) {
       showCorrectOverlay();
       
       if (currentQuestionIndex == questions.length - 1) {
-        // Show completion modal
         Future.delayed(const Duration(milliseconds: 1200), () {
           showCompletionModal();
         });
@@ -275,27 +286,17 @@ class _MyPlay2State extends State<MyPlay2> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                StreamBuilder<QuerySnapshot>(
+                StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('achievements')
-                      .where('title', isEqualTo: 'Newbie')
+                      .doc('ac1C1EOZ61X9t6GMmVzw')
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      // Create the achievement document if it doesn't exist
-                      FirebaseFirestore.instance.collection('achievements').add({
-                        'title': 'Newbie',
-                        'description': 'Complete Level 2 for the first time',
-                        'points': 100,
-                        'imageBase64': '', // Add your achievement image in base64
-                        'completedBy': [],
-                        'isClaimable': true,
-                        'isHidden': false,
-                      });
+                    if (!snapshot.hasData) {
                       return const SizedBox();
                     }
                     
-                    final achievement = snapshot.data!.docs.first;
+                    final achievement = snapshot.data!;
                     final completedBy = List<String>.from(achievement['completedBy'] ?? []);
                     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
                     
@@ -324,7 +325,7 @@ class _MyPlay2State extends State<MyPlay2> {
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Newbie',
+                              'The Beast',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 16,
@@ -333,7 +334,7 @@ class _MyPlay2State extends State<MyPlay2> {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              'Complete Level 2 for the first time',
+                              'Beat the boss level in solo adventure',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 14,
@@ -346,12 +347,13 @@ class _MyPlay2State extends State<MyPlay2> {
                                 try {
                                   final user = FirebaseAuth.instance.currentUser;
                                   if (user != null) {
-                                    // Update achievement
-                                    await achievement.reference.update({
+                                    await FirebaseFirestore.instance
+                                        .collection('achievements')
+                                        .doc('ac1C1EOZ61X9t6GMmVzw')
+                                        .update({
                                       'completedBy': FieldValue.arrayUnion([user.uid])
                                     });
 
-                                    // Add 100 points to player
                                     final playerDoc = FirebaseFirestore.instance
                                         .collection('player')
                                         .doc(user.uid);
@@ -360,18 +362,16 @@ class _MyPlay2State extends State<MyPlay2> {
                                     final currentPoints = playerSnapshot.data()?['points'] ?? 0;
                                     
                                     await playerDoc.update({
-                                      'points': currentPoints + 100
+                                      'points': currentPoints + 300
                                     });
 
-                                    // Show success message
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Achievement claimed! +100 points'),
+                                        content: Text('Achievement claimed! +300 points'),
                                         backgroundColor: Colors.green,
                                       ),
                                     );
 
-                                    // Navigate back to solo screen
                                     if (mounted) {
                                       Navigator.pushReplacementNamed(context, '/solo');
                                     }
@@ -447,9 +447,9 @@ class _MyPlay2State extends State<MyPlay2> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              questions[currentQuestionIndex]['explanation'] ?? 'Try again!',
-              style: const TextStyle(
+            const Text(
+              'Try again!',
+              style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
@@ -474,7 +474,6 @@ class _MyPlay2State extends State<MyPlay2> {
   @override
   void dispose() {
     overlayEntry?.remove();
-    audioPlayer.dispose();
     super.dispose();
   }
 }

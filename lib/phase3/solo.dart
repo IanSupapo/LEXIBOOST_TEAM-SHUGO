@@ -3,6 +3,7 @@ import 'package:animated_button/animated_button.dart';
 import 'package:shugo/phase3/level/solo_reusable.dart';
 import 'package:shugo/phase3/level/play1.dart';
 import 'package:shugo/phase3/level/play2.dart';
+import 'package:shugo/phase3/level/play3.dart';
 
 class MySolo extends StatefulWidget {
   const MySolo({super.key});
@@ -60,7 +61,10 @@ class _MySoloState extends State<MySolo> {
                   gifPath: 'assets/bear.gif',
                   modalText: "",
                   onPlayPressed: () {
-                    showModal(context, "");
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MyPlay3()),
+                    );
                   },
                 ).build(context),
               ),

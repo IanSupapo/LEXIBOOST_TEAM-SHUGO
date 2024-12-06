@@ -20,6 +20,7 @@ import 'package:shugo/phase2/rank.dart';
 import 'package:shugo/phase2/settings.dart';
 import 'package:shugo/phase3/level/play1.dart';
 import 'package:shugo/phase3/level/play2.dart';
+import 'package:shugo/phase3/level/play3.dart';
 import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
 
@@ -82,6 +83,7 @@ class MyApp extends StatelessWidget {
         '/versus' : (context) => const MyVersus(),
         '/play1' : (context) => const MyPlay1(),
         '/play2' : (context) => const MyPlay2(),
+        '/play3' : (context) => const MyPlay3(),
 
 
 
