@@ -90,7 +90,7 @@ class MyRank extends StatelessWidget {
                   return ListView.builder(
                     padding: EdgeInsets.symmetric(
                       vertical: containerHeight * 0.05,
-                      horizontal: screenWidth * 0.02,
+                      horizontal: screenWidth * 0.01,
                     ),
                     itemCount: sortedUsers.length,
                     itemBuilder: (context, index) {
@@ -101,7 +101,7 @@ class MyRank extends StatelessWidget {
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 8.0),
                           child: Container(
-                            width: screenWidth * 0.99,
+                            width: screenWidth * 0.95,
                             height: containerHeight,
                             decoration: BoxDecoration(
                               color: isCurrentUser ? Colors.green.shade200 : Colors.white,
@@ -170,32 +170,48 @@ class MyRank extends StatelessWidget {
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
-                                          Image.asset(
-                                            'assets/medal.png',
-                                            height: imageSize * 0.5,
-                                            width: imageSize * 0.5,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            '${userData['points']}',
-                                            style: TextStyle(
-                                              fontSize: subtitleFontSize,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Image.asset(
+                                                'assets/medal.png',
+                                                height: imageSize * 0.5,
+                                                width: imageSize * 0.5,
+                                              ),
+                                              SizedBox(height: 4),
+                                              Padding(
+                                                padding: EdgeInsets.only(right: 2),
+                                                child: Text(
+                                                  '${userData['points']}',
+                                                  style: TextStyle(
+                                                    fontSize: subtitleFontSize,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                           SizedBox(width: 16),
-                                          Image.asset(
-                                            'assets/Trophy2.png',
-                                            height: imageSize * 0.5,
-                                            width: imageSize * 0.5,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            '${userData['trophy']}',
-                                            style: TextStyle(
-                                              fontSize: subtitleFontSize,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Image.asset(
+                                                'assets/Trophy2.png',
+                                                height: imageSize * 0.5,
+                                                width: imageSize * 0.5,
+                                              ),
+                                              SizedBox(height: 4),
+                                              Padding(
+                                                padding: EdgeInsets.only(right: 2),
+                                                child: Text(
+                                                  '${userData['trophy']}',
+                                                  style: TextStyle(
+                                                    fontSize: subtitleFontSize,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),

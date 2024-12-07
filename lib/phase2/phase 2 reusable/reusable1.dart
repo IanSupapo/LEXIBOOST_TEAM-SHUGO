@@ -6,7 +6,7 @@ Widget customNavigationBar({
   required Function(int) onTap,
 }) {
   return CurvedNavigationBar(
-    backgroundColor: const Color.fromARGB(0, 66, 164, 245),
+    backgroundColor: Colors.transparent,
     animationDuration: const Duration(milliseconds: 300),
     index: currentIndex,
     onTap: onTap,

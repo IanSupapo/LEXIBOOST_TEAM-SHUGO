@@ -1,6 +1,7 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:shugo/Final%20Phase/account.dart';
 import 'package:shugo/PP.dart';
 import 'package:shugo/TS.dart';
 import 'package:shugo/phase1/Starting/starting.dart';
@@ -45,10 +46,10 @@ Future<void> initializeFirebase() async {
           projectId: "lexiboost-7de91",
           storageBucket: "lexiboost-7de91.firebasestorage.app",
           messagingSenderId: "303696333249",
-          appId: "1:303696333249:web:a999b16984515765d60740",
+          appId: "1:303696333249:web:a999b16984515765d60740",   
           measurementId: "G-54FTGB3MMZ",
       ),
-    );
+  );  
     debugPrint("Firebase  successfully initialized to Web.");
   } else {
     await Firebase.initializeApp();
@@ -91,6 +92,7 @@ class MyApp extends StatelessWidget {
         '/play1' : (context) => const MyPlay1(),
         '/play2' : (context) => const MyPlay2(),
         '/play3' : (context) => const MyPlay3(),
+        '/account' : (context) => const MyAccount(),
 
 
 

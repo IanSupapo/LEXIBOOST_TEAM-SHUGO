@@ -97,18 +97,6 @@ class MyAchievement extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
-      appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
-        title: const Text(
-          "Achievements",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        automaticallyImplyLeading: false, // Remove the back button
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('achievements')
@@ -136,109 +124,112 @@ class MyAchievement extends StatelessWidget {
             );
           }
 
-          return RawScrollbar(
-            thumbVisibility: false, // Hide scrollbar when not scrolling
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: snapshot.data!.docs.length,
-              itemBuilder: (context, index) {
-                final achievement = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-                final achievementId = snapshot.data!.docs[index].id;
-                final bool isClaimable = achievement['isClaimable'] ?? false;
-                final bool isCompleted = achievement['completedBy']?.contains(userId) ?? false;
+          return Padding(
+            padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.05),
+            child: RawScrollbar(
+              thumbVisibility: false,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final achievement = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                  final achievementId = snapshot.data!.docs[index].id;
+                  final bool isClaimable = achievement['isClaimable'] ?? false;
+                  final bool isCompleted = achievement['completedBy']?.contains(userId) ?? false;
 
-                return Container(
-                  width: 400,
-                  height: 110,
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isCompleted ? Colors.green.shade200 : Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 5,
-                        offset: Offset(2, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Circle container for the image
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCompleted ? Colors.green : Colors.blue.shade100,
+                  return Container(
+                    width: 400,
+                    height: 110,
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isCompleted ? Colors.green.shade200 : Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 5,
+                          offset: Offset(2, 2),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: achievement['imageBase64'] != null && achievement['imageBase64'].isNotEmpty
-                              ? Image.memory(
-                                  base64Decode(achievement['imageBase64']),
-                                  fit: BoxFit.contain,
-                                )
-                              : Icon(Icons.emoji_events, color: Colors.white),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Circle container for the image
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isCompleted ? Colors.green : Colors.blue.shade100,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: achievement['imageBase64'] != null && achievement['imageBase64'].isNotEmpty
+                                ? Image.memory(
+                                    base64Decode(achievement['imageBase64']),
+                                    fit: BoxFit.contain,
+                                  )
+                                : Icon(Icons.emoji_events, color: Colors.white),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      // Text section
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(width: 20),
+                        // Text section
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                achievement['title'] ?? 'No Title',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                achievement['description'] ?? 'No Description',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Points section
+                        Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              achievement['title'] ?? 'No Title',
+                              '${achievement['points']} pts',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                                 color: Colors.black,
                               ),
                             ),
                             const SizedBox(height: 5),
-                            Text(
-                              achievement['description'] ?? 'No Description',
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black54,
+                            // Only show checkmark if completed
+                            if (isCompleted)
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.green,
+                                size: 30,
                               ),
-                            ),
                           ],
                         ),
-                      ),
-                      // Points section
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${achievement['points']} pts',
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          // Only show checkmark if completed
-                          if (isCompleted)
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
-                              size: 30,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           );
         },

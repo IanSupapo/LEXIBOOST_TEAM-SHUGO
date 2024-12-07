@@ -32,19 +32,12 @@ class _MySettingsState extends State<MySettings> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Settings buttons
-                     
-                      AnimatedDividerButton(
-                        text: "Guidelines",
-                        onTap: () {
-                          // Add navigation or action here
-                        },
-                      ),
+                      // Settings buttons                   
                       const SizedBox(height: 15),
                       AnimatedDividerButton(
                         text: "Account Settings",
                         onTap: () {
-                          // Add navigation or action here
+                          Navigator.pushNamed(context, '/account');
                         },
                       ),
                       const SizedBox(height: 15),

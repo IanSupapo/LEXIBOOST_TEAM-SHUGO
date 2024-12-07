@@ -105,11 +105,11 @@ class _MySoloState extends State<MySolo> {
                   );
                 }
               },
-              height: 70,
-              width: 70,
+              height: 50,
+              width: 50,
               color: Colors.transparent,
               child: Transform.rotate(
-                angle: 3.1416, // Rotate 180 degrees (π radians)
+                angle: 3.1416,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
@@ -134,8 +134,8 @@ class _MySoloState extends State<MySolo> {
                   );
                 }
               },
-              height: 70,
-              width: 70,
+              height: 50,
+              width: 50,
               color: Colors.transparent,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),

@@ -433,20 +433,22 @@ class _MyPlay1State extends State<MyPlay1> {
                     Navigator.pushReplacementNamed(context, '/solo');
                   },
                   height: MediaQuery.of(context).size.height * 0.07,
-                  width: MediaQuery.of(context).size.width * 0.4,
+                  width: MediaQuery.of(context).size.width * 0.5,
                   color: Colors.blue.shade300,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(35),
-                    ),
-                    child: const Text(
-                      'Back to Solo Mode',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                        decoration: TextDecoration.none,
+                  child: Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(35),
+                      ),
+                      child: const Text(
+                        'Back to Solo Mode',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                          decoration: TextDecoration.none,
+                        ),
                       ),
                     ),
                   ),
