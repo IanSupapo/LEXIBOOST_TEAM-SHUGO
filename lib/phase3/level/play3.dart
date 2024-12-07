@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
+import 'package:animated_button/animated_button.dart';
 
 class MyPlay3 extends StatefulWidget {
   const MyPlay3({super.key});
@@ -17,6 +18,7 @@ class _MyPlay3State extends State<MyPlay3> {
   String? selectedAnswer;
   bool isLoading = true;
   OverlayEntry? overlayEntry;
+  Color _buttonColor = const Color(0xFFDAFEFC);
 
   @override
   void initState() {
@@ -162,17 +164,18 @@ class _MyPlay3State extends State<MyPlay3> {
             // Check button
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
+              child: AnimatedButton(
                 onPressed: checkAnswer,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(MediaQuery.of(context).size.width * 0.8,
-                      MediaQuery.of(context).size.height * 0.1),
-                ),
+                height: MediaQuery.of(context).size.height * 0.1,
+                width: MediaQuery.of(context).size.width * 0.8,
+                color: _buttonColor,
                 child: const Text(
                   'Check',
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 20,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
                 ),
               ),
@@ -202,6 +205,7 @@ class _MyPlay3State extends State<MyPlay3> {
         });
       }
     } else {
+      _wrongAnswerAnimation();
       setState(() {
         health--;
         if (health <= 0) {
@@ -217,21 +221,36 @@ class _MyPlay3State extends State<MyPlay3> {
         child: Material(
           color: Colors.transparent,
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Correct!',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+            child: TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              builder: (context, double value, child) {
+                return Opacity(
+                  opacity: value > 0.5 ? 1.0 - value : value * 2,
+                  child: Transform.scale(
+                    scale: value * 1.5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 48, 
+                        vertical: 24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Correct!',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -240,7 +259,7 @@ class _MyPlay3State extends State<MyPlay3> {
 
     Overlay.of(context).insert(overlayEntry!);
 
-    Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(const Duration(milliseconds: 800), () {
       overlayEntry?.remove();
       overlayEntry = null;
     });
@@ -253,8 +272,8 @@ class _MyPlay3State extends State<MyPlay3> {
       builder: (BuildContext context) {
         return Center(
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.5,
-            height: MediaQuery.of(context).size.height * 0.6,
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: MediaQuery.of(context).size.height * 0.4,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(45),
@@ -274,6 +293,8 @@ class _MyPlay3State extends State<MyPlay3> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -282,6 +303,8 @@ class _MyPlay3State extends State<MyPlay3> {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,
+                    color: Colors.black,
+                    decoration: TextDecoration.none,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -412,22 +435,26 @@ class _MyPlay3State extends State<MyPlay3> {
                   },
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
+                AnimatedButton(
                   onPressed: () {
                     Navigator.pushReplacementNamed(context, '/solo');
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                  height: MediaQuery.of(context).size.height * 0.07,
+                  width: MediaQuery.of(context).size.width * 0.4,
+                  color: Colors.blue.shade300,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(35),
                     ),
-                  ),
-                  child: const Text(
-                    'Back to Solo Mode',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      'Back to Solo Mode',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                   ),
                 ),
@@ -469,6 +496,20 @@ class _MyPlay3State extends State<MyPlay3> {
       isDismissible: false,
       enableDrag: false,
     );
+  }
+
+  void _wrongAnswerAnimation() {
+    setState(() {
+      _buttonColor = Colors.red;
+    });
+    
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _buttonColor = const Color(0xFFDAFEFC);
+        });
+      }
+    });
   }
 
   @override

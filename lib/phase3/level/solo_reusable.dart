@@ -24,48 +24,53 @@ class CustomReusable {
       children: [
         // Centered container
         Container(
-          width: MediaQuery.of(context).size.width * 0.7,
-          height: MediaQuery.of(context).size.height * 0.6,
+          width: MediaQuery.of(context).size.width * 0.6,
+          height: MediaQuery.of(context).size.height * 0.5,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(35),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Level text
-              Text(
-                levelText,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Level text
+                  Text(
+                    levelText,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Description text
+                  Text(
+                    descriptionText,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // GIF image
+                  Image.asset(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    height: MediaQuery.of(context).size.height * 0.3,
+                    gifPath,
+                    fit: BoxFit.contain,
+                  ),
+                ],
               ),
-              const SizedBox(height: 10), // Spacing between texts
-              // Description text
-              Text(
-                descriptionText,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 20), // Spacing between text and image
-              // GIF image
-              Image.asset(
-                width: MediaQuery.of(context).size.width * 0.3,
-                height: MediaQuery.of(context).size.height * 0.3,
-                gifPath,
-                fit: BoxFit.contain,
-              ),
-            ],
+            ),
           ),
         ),
-        const SizedBox(height: 30), // Spacing between container and button
+        const SizedBox(height: 30),
         // Play animated button
         AnimatedButton(
           onPressed: () {
@@ -74,8 +79,8 @@ class CustomReusable {
               builder: (BuildContext context) {
                 return Center(
                   child: Container(
-                    width: MediaQuery.of(context).size.width * 0.5,
-                    height: MediaQuery.of(context).size.height * 0.6,
+                    width: MediaQuery.of(context).size.width * 0.7,
+                    height: MediaQuery.of(context).size.height * 0.4,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(35),
@@ -84,19 +89,19 @@ class CustomReusable {
                           color: Colors.black.withOpacity(0.5),
                           spreadRadius: 2,
                           blurRadius: 10,
-                          offset: const Offset(0, 4), // Shadow position
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
                     child: Column(
                       children: [
                         const SizedBox(height: 20),
-                        // Level title changes dynamically based on levelText
+                        // Level title
                         Text(
                           levelText,
                           style: const TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                             decoration: TextDecoration.none,
@@ -104,35 +109,27 @@ class CustomReusable {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 10),
-                        // Description text changes dynamically based on levelText
+                        // Description text
                         Text(
                           "Continue to play $levelText?",
                           style: const TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                             decoration: TextDecoration.none,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 30),
-                        // Centered GIF image in the modal
-                        Image.asset(
-                          gifPath,
-                          width: MediaQuery.of(context).size.width * 0.2,
-                          height: MediaQuery.of(context).size.height * 0.2,
-                          fit: BoxFit.contain,
-                        ),
                         Expanded(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                modalText, // Use modalText parameter here
+                                modalText,
                                 style: const TextStyle(
                                   fontFamily: 'Poppins',
-                                  fontSize: 24,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
                                 ),
@@ -141,20 +138,19 @@ class CustomReusable {
                             ],
                           ),
                         ),
-                        // Add some space above the buttons
-                        // Play button above the Close button without triggering another modal
+                        // Play button
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10.0),
                           child: AnimatedButton(
                             onPressed: () {
-                              Navigator.of(context).pop(); // Close the modal
+                              Navigator.of(context).pop();
                               if (levelText == 'Level 2') {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(builder: (context) => const MyPlay2()),
                                 );
                               } else {
-                                onPlayPressed(); // Use the default callback for other levels
+                                onPlayPressed();
                               }
                             },
                             height: MediaQuery.of(context).size.height * 0.07,
@@ -164,7 +160,7 @@ class CustomReusable {
                               "Play",
                               style: TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                                 decoration: TextDecoration.none,
@@ -172,12 +168,12 @@ class CustomReusable {
                             ),
                           ),
                         ),
-                        // Close button at the bottom with padding
+                        // Close button
                         Padding(
                           padding: const EdgeInsets.only(bottom: 20.0),
                           child: AnimatedButton(
                             onPressed: () {
-                              Navigator.of(context).pop(); // Close the modal
+                              Navigator.of(context).pop();
                             },
                             height: MediaQuery.of(context).size.height * 0.07,
                             width: MediaQuery.of(context).size.width * 0.3,
@@ -186,10 +182,10 @@ class CustomReusable {
                               "Close",
                               style: TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 24,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                decoration: TextDecoration.none, // Remove underline
+                                decoration: TextDecoration.none,
                               ),
                             ),
                           ),
@@ -202,7 +198,7 @@ class CustomReusable {
             );
           },
           height: MediaQuery.of(context).size.height * 0.1,
-          width: MediaQuery.of(context).size.width * 0.7,
+          width: MediaQuery.of(context).size.width * 0.6,
           color: const Color(0xFFDAFEFC),
           child: Text(
             'Play $levelText',

@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:animated_button/animated_button.dart';
 
 class MyPlay1 extends StatefulWidget {
   const MyPlay1({super.key});
@@ -17,6 +20,7 @@ class _MyPlay1State extends State<MyPlay1> {
   List<String> selectedAnswers = [];
   bool isLoading = true;
   OverlayEntry? overlayEntry;
+  Color _buttonColor = const Color(0xFFDAFEFC);
 
   @override
   void initState() {
@@ -86,13 +90,20 @@ class _MyPlay1State extends State<MyPlay1> {
             // Check button
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
+              child: AnimatedButton(
                 onPressed: checkAnswer,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(MediaQuery.of(context).size.width * 0.8,
-                      MediaQuery.of(context).size.height * 0.1),
+                height: MediaQuery.of(context).size.height * 0.1,
+                width: MediaQuery.of(context).size.width * 0.8,
+                color: _buttonColor, // Use animated color
+                child: const Text(
+                  'Check',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-                child: const Text('Check'),
               ),
             ),
           ],
@@ -325,21 +336,36 @@ class _MyPlay1State extends State<MyPlay1> {
         child: Material(
           color: Colors.transparent,
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Correct!',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+            child: TweenAnimationBuilder(
+              duration: const Duration(milliseconds: 800),
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              builder: (context, double value, child) {
+                return Opacity(
+                  opacity: value > 0.5 ? 1.0 - value : value * 2,
+                  child: Transform.scale(
+                    scale: value * 1.5,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 48, 
+                        vertical: 24,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Text(
+                        'Correct!',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -348,22 +374,25 @@ class _MyPlay1State extends State<MyPlay1> {
 
     Overlay.of(context).insert(overlayEntry!);
 
-    // Remove the overlay after 1 second
-    Future.delayed(const Duration(seconds: 1), () {
+    // Remove the overlay after animation completes
+    Future.delayed(const Duration(milliseconds: 800), () {
       overlayEntry?.remove();
       overlayEntry = null;
     });
   }
 
   void showCompletionModal() {
+    // First handle achievement claiming
+    _handleAchievement();
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Center(
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.5,
-            height: MediaQuery.of(context).size.height * 0.6,
+            width: MediaQuery.of(context).size.width * 0.6,
+            height: MediaQuery.of(context).size.height * 0.4,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(45),
@@ -383,6 +412,8 @@ class _MyPlay1State extends State<MyPlay1> {
                     fontFamily: 'Poppins',
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -391,152 +422,32 @@ class _MyPlay1State extends State<MyPlay1> {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,
+                    color: Colors.black,
+                    decoration: TextDecoration.none,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('achievements')
-                      .where('title', isEqualTo: 'The Starter')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) return const SizedBox();
-                    
-                    final achievement = snapshot.data!.docs.first;
-                    final completedBy = List<String>.from(achievement['completedBy'] ?? []);
-                    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                    
-                    // Only show if user hasn't claimed it yet
-                    if (!completedBy.contains(currentUserId)) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: Colors.green.shade300,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Achievement Unlocked!',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'The Starter',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Complete your first level',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 14,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  final user = FirebaseAuth.instance.currentUser;
-                                  if (user != null) {
-                                    // Update achievement
-                                    await achievement.reference.update({
-                                      'completedBy': FieldValue.arrayUnion([user.uid])
-                                    });
-
-                                    // Add 100 points to player
-                                    final playerDoc = FirebaseFirestore.instance
-                                        .collection('player')
-                                        .doc(user.uid);
-                                    
-                                    final playerSnapshot = await playerDoc.get();
-                                    final currentPoints = playerSnapshot.data()?['points'] ?? 0;
-                                    
-                                    await playerDoc.update({
-                                      'points': currentPoints + 100
-                                    });
-
-                                    // Show success message
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Achievement claimed! +100 points'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-
-                                    // Navigate back to solo screen
-                                    if (mounted) {
-                                      Navigator.pushReplacementNamed(context, '/solo');
-                                    }
-                                  }
-                                } catch (e) {
-                                  print('Error claiming achievement: $e');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: const Text(
-                                'Claim Achievement',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return const SizedBox();
-                  },
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
+                AnimatedButton(
                   onPressed: () {
                     Navigator.pushReplacementNamed(context, '/solo');
                   },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                  height: MediaQuery.of(context).size.height * 0.07,
+                  width: MediaQuery.of(context).size.width * 0.4,
+                  color: Colors.blue.shade300,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(35),
                     ),
-                  ),
-                  child: const Text(
-                    'Back to Solo Mode',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                    child: const Text(
+                      'Back to Solo Mode',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                        decoration: TextDecoration.none,
+                      ),
                     ),
                   ),
                 ),
@@ -548,22 +459,106 @@ class _MyPlay1State extends State<MyPlay1> {
     );
   }
 
+  Future<void> _handleAchievement() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final achievementQuery = await FirebaseFirestore.instance
+            .collection('achievements')
+            .where('title', isEqualTo: 'The Starter')
+            .get();
+
+        if (achievementQuery.docs.isNotEmpty) {
+          final achievement = achievementQuery.docs.first;
+          final completedBy = List<String>.from(achievement['completedBy'] ?? []);
+
+          if (!completedBy.contains(user.uid)) {
+            // Update achievement
+            await achievement.reference.update({
+              'completedBy': FieldValue.arrayUnion([user.uid])
+            });
+
+            // Add points to player
+            final playerDoc = FirebaseFirestore.instance
+                .collection('player')
+                .doc(user.uid);
+            
+            final playerSnapshot = await playerDoc.get();
+            final currentPoints = playerSnapshot.data()?['points'] ?? 0;
+            
+            await playerDoc.update({
+              'points': currentPoints + 100
+            });
+
+            // Show notification
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.emoji_events,
+                          color: Colors.amber,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Text(
+                                'Achievement Unlocked: The Starter',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '+100 points',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  backgroundColor: Colors.green.shade700,
+                  duration: const Duration(seconds: 4),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error handling achievement: $e');
+    }
+  }
+
   void checkAnswer() async {
     final correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
     final correctAnswers = questions[currentQuestionIndex]['correctAnswers'];
 
-    // Determine which field to use
     final correctList = correctAnswer ?? correctAnswers;
     if (correctList == null) {
       print('Error: correctAnswer(s) is null');
       return;
     }
 
-    // Convert to List<String> and compare
     List<String> correctAnswersList = List<String>.from(correctList);
     
     if (selectedAnswers.length != correctAnswersList.length) {
-      // If not all blanks are filled
       return;
     }
 
@@ -608,6 +603,7 @@ class _MyPlay1State extends State<MyPlay1> {
         });
       }
     } else {
+      _wrongAnswerAnimation(); // Add shake and color change
       setState(() {
         health--;
         if (health <= 0) {
@@ -652,6 +648,22 @@ class _MyPlay1State extends State<MyPlay1> {
       isDismissible: false, // Prevent dismissing by tapping outside
       enableDrag: false, // Prevent dismissing by dragging down
     );
+  }
+
+  // Add shake animation method
+  void _wrongAnswerAnimation() {
+    setState(() {
+      _buttonColor = Colors.red;
+    });
+    
+    // Only color change animation
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _buttonColor = const Color(0xFFDAFEFC);
+        });
+      }
+    });
   }
 
   @override

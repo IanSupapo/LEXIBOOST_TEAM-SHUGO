@@ -194,7 +194,7 @@ class MyAchievement extends StatelessWidget {
                               achievement['title'] ?? 'No Title',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 32,
+                                fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.black,
                               ),
@@ -204,7 +204,7 @@ class MyAchievement extends StatelessWidget {
                               achievement['description'] ?? 'No Description',
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
-                                fontSize: 15,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black54,
                               ),

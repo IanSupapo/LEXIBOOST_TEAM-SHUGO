@@ -57,16 +57,13 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   audioplayers: ^6.1.0
   shared_preferences: ^2.3.3
+  flutter_launcher_icons: ^0.14.2
+  shake: ^2.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
+  flutter_launcher_icons: "^0.14.2"
   flutter_lints: ^4.0.0
 
 # For information on the generic Dart part of this file, see the
@@ -111,3 +108,25 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/1.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0486C7"
+  adaptive_icon_foreground: "assets/1.png"
+  web:
+    generate: true
+    image_path: "assets/1.png"
+    background_color: "#0486C7"
+    theme_color: "#0486C7"
+  windows:
+    generate: true
+    image_path: "assets/1.png"
+    icon_size: 48
+    background_color: "#0486C7"
+  macos:
+    generate: true
+    image_path: "assets/1.png"
+    background_color: "#0486C7"

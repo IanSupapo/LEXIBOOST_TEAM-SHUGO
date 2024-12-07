@@ -17,108 +17,61 @@ class _MySettingsState extends State<MySettings> {
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
       body: Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.7,
-          height: MediaQuery.of(context).size.height * 0.6,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                spreadRadius: 2,
-                blurRadius: 8,
-                offset: const Offset(0, 4), // Shadow position
-              ),
-            ],
-          ),
-          child: RawScrollbar(
+        child: RawScrollbar(
+          controller: _scrollController,
+          thumbVisibility: false,
+          thickness: 0,
+          child: SingleChildScrollView(
             controller: _scrollController,
-            thumbVisibility: false,
-            thickness: 0,
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Container(
-                    constraints: BoxConstraints(
-                      minHeight: MediaQuery.of(context).size.height * 0.6,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // DividerButton replaced with AnimatedButton
-                        AnimatedDividerButton(
-                          text: "Features",
-                          onTap: () {
-                            // Add navigation or action here
-                          },
-                        ),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.grey,
-                          indent: 20,
-                          endIndent: 20,
-                        ),
-                        AnimatedDividerButton(
-                          text: "Guidelines",
-                          onTap: () {
-                            // Add navigation or action here
-                          },
-                        ),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.grey,
-                          indent: 20,
-                          endIndent: 20,
-                        ),
-                        AnimatedDividerButton(
-                          text: "Account Settings",
-                          onTap: () {
-                            // Add navigation or action here
-                          },
-                        ),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.grey,
-                          indent: 20,
-                          endIndent: 20,
-                        ),
-                        AnimatedDividerButton(
-                          text: "Privacy Policy",
-                          onTap: () {
-                            // Add navigation or action here
-                          },
-                        ),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.grey,
-                          indent: 20,
-                          endIndent: 20,
-                        ),
-                        AnimatedDividerButton(
-                          text: "Terms of Service",
-                          onTap: () {
-                            // Add navigation or action here
-                          },
-                        ),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.grey,
-                          indent: 20,
-                          endIndent: 20,
-                        ),
-                        AnimatedDividerButton(
-                          text: "Exit",
-                          onTap: () {
-                            _showExitConfirmation(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Container(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height * 0.6,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Settings buttons
+                     
+                      AnimatedDividerButton(
+                        text: "Guidelines",
+                        onTap: () {
+                          // Add navigation or action here
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      AnimatedDividerButton(
+                        text: "Account Settings",
+                        onTap: () {
+                          // Add navigation or action here
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      AnimatedDividerButton(
+                        text: "Privacy Policy",
+                        onTap: () {
+                          // Add navigation or action here
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      AnimatedDividerButton(
+                        text: "Terms of Service",
+                        onTap: () {
+                          // Add navigation or action here
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      AnimatedDividerButton(
+                        text: "Exit",
+                        onTap: () {
+                          _showExitConfirmation(context);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -202,30 +155,20 @@ class AnimatedDividerButton extends StatelessWidget {
     return AnimatedButton(
       onPressed: onTap,
       height: 60,
-      width: MediaQuery.of(context).size.width * 0.6,
-      color: Colors.blue.shade300,
+      width: MediaQuery.of(context).size.width * 0.8,
+      color: Colors.white,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Left-aligned text
-            Text(
-              text,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+        child: Center(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
             ),
-            // Right-aligned arrow icon
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 24,
-            ),
-          ],
+          ),
         ),
       ),
     );

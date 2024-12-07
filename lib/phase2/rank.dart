@@ -90,117 +90,119 @@ class MyRank extends StatelessWidget {
                   return ListView.builder(
                     padding: EdgeInsets.symmetric(
                       vertical: containerHeight * 0.05,
-                      horizontal: screenWidth * 0.025,
+                      horizontal: screenWidth * 0.02,
                     ),
                     itemCount: sortedUsers.length,
                     itemBuilder: (context, index) {
                       final userData = sortedUsers[index];
                       final isCurrentUser = userData['userId'] == currentUserId;
                       
-                      return Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
-                        child: Container(
-                          width: screenWidth * 0.95,
-                          height: containerHeight,
-                          decoration: BoxDecoration(
-                            color: isCurrentUser ? Colors.green.shade200 : Colors.white,
-                            borderRadius: BorderRadius.circular(35),
-                          ),
-                          child: SizedBox(
-                            height: containerHeight * 0.8,
-                            child: Row(
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                      fontSize: titleFontSize,
-                                      fontWeight: FontWeight.bold,
-                                      color: isCurrentUser ? Colors.black : Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: SizedBox(
-                                      width: imageSize,
-                                      height: imageSize,
-                                      child: userData['imageBase64'].isNotEmpty
-                                          ? CircleAvatar(
-                                              radius: imageSize / 2,
-                                              backgroundImage: MemoryImage(
-                                                base64Decode(userData['imageBase64'].split(',').last),
-                                              ),
-                                            )
-                                          : CircleAvatar(
-                                              radius: imageSize / 2,
-                                              backgroundColor: Colors.grey,
-                                              child: Icon(
-                                                Icons.person,
-                                                color: Colors.white,
-                                                size: imageSize * 0.6,
-                                              ),
-                                            ),
-                                    ),
-                                    title: Text(
-                                      userData['fullName'],
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Container(
+                            width: screenWidth * 0.99,
+                            height: containerHeight,
+                            decoration: BoxDecoration(
+                              color: isCurrentUser ? Colors.green.shade200 : Colors.white,
+                              borderRadius: BorderRadius.circular(35),
+                            ),
+                            child: SizedBox(
+                              height: containerHeight * 0.8,
+                              child: Row(
+                                children: [
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                                    child: Text(
+                                      '${index + 1}',
                                       style: TextStyle(
                                         fontSize: titleFontSize,
                                         fontWeight: FontWeight.bold,
+                                        color: isCurrentUser ? Colors.black : Colors.black,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    subtitle: Text(
-                                      'ID: ${userData['playerId']}',
-                                      style: TextStyle(
-                                        fontSize: subtitleFontSize,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(right: screenWidth * 0.02),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Image.asset(
-                                          'assets/medal.png',
-                                          height: imageSize * 0.5,
-                                          width: imageSize * 0.5,
+                                  Expanded(
+                                    flex: 2,
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: SizedBox(
+                                        width: imageSize,
+                                        height: imageSize,
+                                        child: userData['imageBase64'].isNotEmpty
+                                            ? CircleAvatar(
+                                                radius: imageSize / 2,
+                                                backgroundImage: MemoryImage(
+                                                  base64Decode(userData['imageBase64'].split(',').last),
+                                                ),
+                                              )
+                                            : CircleAvatar(
+                                                radius: imageSize / 2,
+                                                backgroundColor: Colors.grey,
+                                                child: Icon(
+                                                  Icons.person,
+                                                  color: Colors.white,
+                                                  size: imageSize * 0.6,
+                                                ),
+                                              ),
+                                      ),
+                                      title: Text(
+                                        userData['fullName'],
+                                        style: TextStyle(
+                                          fontSize: titleFontSize,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '${userData['points']}',
-                                          style: TextStyle(
-                                            fontSize: subtitleFontSize,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      subtitle: Text(
+                                        'ID: ${userData['playerId']}',
+                                        style: TextStyle(
+                                          fontSize: subtitleFontSize,
                                         ),
-                                        SizedBox(width: 16),
-                                        Image.asset(
-                                          'assets/Trophy2.png',
-                                          height: imageSize * 0.5,
-                                          width: imageSize * 0.5,
-                                        ),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '${userData['trophy']}',
-                                          style: TextStyle(
-                                            fontSize: subtitleFontSize,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  Expanded(
+                                    flex: 1,
+                                    child: Padding(
+                                      padding: EdgeInsets.only(right: screenWidth * 0.02),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          Image.asset(
+                                            'assets/medal.png',
+                                            height: imageSize * 0.5,
+                                            width: imageSize * 0.5,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            '${userData['points']}',
+                                            style: TextStyle(
+                                              fontSize: subtitleFontSize,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(width: 16),
+                                          Image.asset(
+                                            'assets/Trophy2.png',
+                                            height: imageSize * 0.5,
+                                            width: imageSize * 0.5,
+                                          ),
+                                          SizedBox(width: 4),
+                                          Text(
+                                            '${userData['trophy']}',
+                                            style: TextStyle(
+                                              fontSize: subtitleFontSize,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

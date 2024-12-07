@@ -71,13 +71,13 @@ class _MySoloState extends State<MySolo> {
             ],
           ),
 
-          // Back button at the top-left corner
+          // Back button - adjusted position
           Positioned(
-            top: 10,
+            top: 40,
             left: 10,
             child: AnimatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/home'); // Navigate to home
+                Navigator.pushNamed(context, '/home');
               },
               height: 70,
               width: 120,
@@ -94,7 +94,7 @@ class _MySoloState extends State<MySolo> {
 
           // Left arrow button (rotated)
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.4,
+            top: MediaQuery.of(context).size.height * 0.45,
             left: 10,
             child: AnimatedButton(
               onPressed: () {
@@ -123,7 +123,7 @@ class _MySoloState extends State<MySolo> {
 
           // Right arrow button
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.4,
+            top: MediaQuery.of(context).size.height * 0.45,
             right: 10,
             child: AnimatedButton(
               onPressed: () {
