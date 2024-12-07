@@ -12,15 +12,22 @@ Widget reusableWidget({
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
   
+  // Calculate responsive sizes
+  final double labelSize = screenHeight * 0.02;  // 2% of screen height
+  final double inputTextSize = screenHeight * 0.018;  // 1.8% of screen height
+  final double verticalPadding = screenHeight * 0.01;  // 1% of screen height
+  final double horizontalPadding = screenWidth * 0.04;  // 4% of screen width
+  final double iconSize = screenHeight * 0.025;  // 2.5% of screen height
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
-        padding: EdgeInsets.only(left: screenWidth * 0.04, bottom: screenWidth * 0.0),
+        padding: EdgeInsets.only(left: screenWidth * 0.04),
         child: Text(
           labelText,
           style: TextStyle(
-            fontSize: screenHeight * 0.02,
+            fontSize: labelSize,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w400,
             color: Colors.white,
@@ -44,13 +51,14 @@ Widget reusableWidget({
           enableSuggestions: !_isSpecialField(labelText),
           style: TextStyle(
             color: Colors.black,
-            fontSize: screenHeight * 0.02,
+            fontSize: inputTextSize,
+            fontFamily: 'Poppins',
             letterSpacing: _getLetterSpacing(labelText, screenWidth),
           ),
           decoration: InputDecoration(
             contentPadding: EdgeInsets.symmetric(
-              horizontal: screenWidth * 0.02,
-              vertical: screenHeight * 0.01,
+              vertical: verticalPadding,
+              horizontal: horizontalPadding,
             ),
             border: InputBorder.none,
             suffixIcon: isPassword && showEyeIcon
@@ -60,7 +68,7 @@ Widget reusableWidget({
                           ? Icons.visibility
                           : Icons.visibility_off,
                       color: Colors.black,
-                      size: screenHeight * 0.025,
+                      size: iconSize,
                     ),
                     onPressed: onVisibilityToggle,
                   )
