@@ -23,30 +23,37 @@ import 'package:shugo/phase3/level/play2.dart';
 import 'package:shugo/phase3/level/play3.dart';
 import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
+  initializeFirebase();
+ 
+
+
+  runApp(const MyApp());
+}
+
+
+Future<void> initializeFirebase() async {
+  if (kIsWeb) {
+    // For Web
+    await Firebase.initializeApp(
       options: const FirebaseOptions(
-          apiKey: "AIzaSyAjlu_d1T3MBlNrpdefh2mMkycj0OJGWqs",
+        apiKey: "AIzaSyAjlu_d1T3MBlNrpdefh2mMkycj0OJGWqs",
           authDomain: "lexiboost-7de91.firebaseapp.com",
           projectId: "lexiboost-7de91",
           storageBucket: "lexiboost-7de91.firebasestorage.app",
           messagingSenderId: "303696333249",
           appId: "1:303696333249:web:a999b16984515765d60740",
-          measurementId: "G-54FTGB3MMZ"));
-
-  if(Firebase.apps.isNotEmpty) {
-    // ignore: avoid_print
-    print("Firebase connected successfully");
+          measurementId: "G-54FTGB3MMZ",
+      ),
+    );
+    debugPrint("Firebase  successfully initialized to Web.");
   } else {
-    // ignore: avoid_print
-    print("Connection Error. Please check the Firebase Configuration and Try Again");
+    await Firebase.initializeApp();
+    debugPrint("Firebase successfully initialized to Mobile.");
   }
-
-
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

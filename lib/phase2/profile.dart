@@ -1,11 +1,15 @@
 import 'dart:async';
-import 'dart:convert'; // For Base64 encoding
-import 'dart:html' as html; // For web file upload
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:animated_button/animated_button.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 
 class MyProfile extends StatefulWidget {
   const MyProfile({super.key});
@@ -17,36 +21,89 @@ class MyProfile extends StatefulWidget {
 class _MyProfileState extends State<MyProfile> {
   final _fullNameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _imageBase64;
-  String? _backgroundImageBase64;
+  String? _imageUrl;
+  bool _isUploadingImage = false;
 
-  Future<void> pickImageWeb({bool isBackground = false}) async {
-    final completer = Completer<List<int>>();
-    final html.FileUploadInputElement uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = 'image/*';
-    uploadInput.click();
-
-    uploadInput.onChange.listen((e) {
-      final html.File? file = uploadInput.files?.first;
-      if (file != null) {
-        final reader = html.FileReader();
-        reader.readAsArrayBuffer(file);
-        reader.onLoadEnd.listen((e) {
-          completer.complete(reader.result as List<int>);
-        });
-      }
-    });
-
-    final imageBytes = await completer.future;
-    final base64Image = base64Encode(imageBytes);
-
+  Future<void> _uploadImage({bool isBackground = false}) async {
     setState(() {
-      if (isBackground) {
-        _backgroundImageBase64 = base64Image;
-      } else {
-        _imageBase64 = base64Image;
-      }
+      _isUploadingImage = true;
     });
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      
+      if (image == null) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        await _uploadBytes(bytes, image.name, isBackground);
+      } else {
+        final file = File(image.path);
+        await _uploadFile(file, isBackground);
+      }
+    } catch (e) {
+      print('Error picking/uploading image: $e');
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
+  }
+
+  Future<void> _uploadBytes(Uint8List bytes, String fileName, bool isBackground) async {
+    try {
+      final String folder = isBackground ? 'background_images' : 'profile_images';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child(folder)
+          .child('${FirebaseAuth.instance.currentUser!.uid}/$fileName');
+      
+      await ref.putData(bytes);
+      final url = await ref.getDownloadURL();
+      
+      final field = isBackground ? 'backgroundImageUrl' : 'profileImageUrl';
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .update({field: url});
+          
+      setState(() {
+        if (!isBackground) _imageUrl = url;
+      });
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
+
+  Future<void> _uploadFile(File file, bool isBackground) async {
+    try {
+      final String folder = isBackground ? 'background_images' : 'profile_images';
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child(folder)
+          .child('${FirebaseAuth.instance.currentUser!.uid}/${DateTime.now().millisecondsSinceEpoch}');
+      
+      await ref.putFile(file);
+      final url = await ref.getDownloadURL();
+      
+      final field = isBackground ? 'backgroundImageUrl' : 'profileImageUrl';
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .update({field: url});
+          
+      setState(() {
+        if (!isBackground) _imageUrl = url;
+      });
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
   }
 
   void _initializeControllers(Map<String, dynamic> userData) {
@@ -54,12 +111,12 @@ class _MyProfileState extends State<MyProfile> {
     _descriptionController.text = userData['description'] ?? '';
     if (userData['image'] != null) {
       setState(() {
-        _imageBase64 = userData['image'];
+        _imageUrl = userData['image'];
       });
     }
     if (userData['backgroundImage'] != null) {
       setState(() {
-        _backgroundImageBase64 = userData['backgroundImage'];
+        _imageUrl = userData['backgroundImage'];
       });
     }
   }
@@ -108,10 +165,10 @@ class _MyProfileState extends State<MyProfile> {
                           height: 300,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            image: (userData?['backgroundImage'] != null || _backgroundImageBase64 != null)
+                            image: (userData?['backgroundImage'] != null || _imageUrl != null)
                                 ? DecorationImage(
                                     image: MemoryImage(
-                                      base64Decode(_backgroundImageBase64 ?? userData!['backgroundImage']),
+                                      base64Decode(_imageUrl ?? storedImage!),
                                     ),
                                     fit: BoxFit.cover,
                                   )
@@ -131,10 +188,10 @@ class _MyProfileState extends State<MyProfile> {
                                       color: Colors.black,
                                       width: 4.0,
                                     ),
-                                    image: (storedImage != null || _imageBase64 != null)
+                                    image: (storedImage != null || _imageUrl != null)
                                         ? DecorationImage(
                                             image: MemoryImage(
-                                              base64Decode(_imageBase64 ?? storedImage!),
+                                              base64Decode(_imageUrl ?? storedImage!),
                                             ),
                                             fit: BoxFit.cover,
                                           )
@@ -314,15 +371,21 @@ class _MyProfileState extends State<MyProfile> {
                                         ),
                                         const SizedBox(height: 16),
                                         ElevatedButton(
-                                           
-                                          onPressed: () => pickImageWeb(isBackground: false),
-                                          child: const Text('Upload Image'),
-                                          
+                                          onPressed: _isUploadingImage 
+                                              ? null 
+                                              : () => _uploadImage(isBackground: false),
+                                          child: _isUploadingImage 
+                                              ? const CircularProgressIndicator() 
+                                              : const Text('Upload Profile Image'),
                                         ),
                                         const SizedBox(height: 16),
                                         ElevatedButton(
-                                          onPressed: () => pickImageWeb(isBackground: true),
-                                          child: const Text('Upload Background Image'),
+                                          onPressed: _isUploadingImage 
+                                              ? null 
+                                              : () => _uploadImage(isBackground: true),
+                                          child: _isUploadingImage 
+                                              ? const CircularProgressIndicator() 
+                                              : const Text('Upload Background Image'),
                                         ),
                                         const Spacer(),
                                         ElevatedButton(
@@ -334,11 +397,11 @@ class _MyProfileState extends State<MyProfile> {
                                                 'description': _descriptionController.text,
                                               };
                                               
-                                              if (_imageBase64 != null) {
-                                                updates['image'] = _imageBase64!;
+                                              if (_imageUrl != null) {
+                                                updates['image'] = _imageUrl!;
                                               }
-                                              if (_backgroundImageBase64 != null) {
-                                                updates['backgroundImage'] = _backgroundImageBase64!;
+                                              if (_imageUrl != null) {
+                                                updates['backgroundImage'] = _imageUrl!;
                                               }
 
                                               await firestore

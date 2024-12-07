@@ -56,7 +56,6 @@ dependencies:
   firebase_messaging_web: ^3.9.4
   flutter_local_notifications: ^18.0.1
   audioplayers: ^6.1.0
-  better_sound_effect: ^0.0.3
   shared_preferences: ^2.3.3
 
 dev_dependencies:
