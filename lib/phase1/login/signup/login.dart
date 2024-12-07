@@ -200,6 +200,7 @@ class _MyLoginState extends State<MyLogin> {
                     reusableWidget(
                       textController: _emailController,
                       labelText: "Email",
+                      context: context,
                     ),
                     const SizedBox(height: 20),
                     Column(
@@ -212,6 +213,7 @@ class _MyLoginState extends State<MyLogin> {
                           isPasswordObscured: _isPasswordObscured,
                           onVisibilityToggle: _togglePasswordVisibility,
                           showEyeIcon: true,
+                          context: context,
                         ),
                         TextButton(
                           onPressed: () {
@@ -230,12 +232,15 @@ class _MyLoginState extends State<MyLogin> {
                       ],
                     ),
                     const SizedBox(height: 25),
-                    loginButton(onPressed: _loginWithEmailAndPassword),
+                    loginButton(
+                      onPressed: _loginWithEmailAndPassword,
+                      context: context,
+                    ),
                     const SizedBox(height: 25),
-                    const Text(
+                    Text(
                       "Or sign up with",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: MediaQuery.of(context).size.height * 0.02,
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w400,
                         color: Colors.white,
@@ -246,19 +251,35 @@ class _MyLoginState extends State<MyLogin> {
                       onPressed: _loginWithGoogle,
                       imagePath: 'assets/google.png',
                       text: "Log in with Google",
+                      context: context,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      "Don't have an account?",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account?",
+                          style: TextStyle(
+                            fontSize: MediaQuery.of(context).size.height * 0.02,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/signup'),
+                          child: Text(
+                            "Sign up",
+                            style: TextStyle(
+                              fontSize: MediaQuery.of(context).size.height * 0.02,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 30),
-                    signUpButton(onPressed: () => Navigator.pushNamed(context, '/signup')),
                   ],
                 ),
               ),

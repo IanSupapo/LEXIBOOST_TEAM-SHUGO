@@ -63,7 +63,7 @@ class _MyStart2State extends State<MyStart2> {
       }
     } else {
       // User is not signed in, navigate to SignupPage
-      Navigator.pushReplacementNamed(context, '/signup');
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 

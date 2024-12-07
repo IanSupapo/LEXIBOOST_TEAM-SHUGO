@@ -19,6 +19,9 @@ class _MyStarting2State extends State<MyStarting2> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0486C7),
       body: LayoutBuilder(
@@ -32,31 +35,35 @@ class _MyStarting2State extends State<MyStarting2> {
                 children: [
                   Image.asset(
                     'assets/4.png',
-                    width: 350,
-                    height: 350,
+                    width: constraints.maxWidth * 0.8,
+                    height: constraints.maxHeight * 0.3,
                   ),
-                  const Text(
-                    "Could you please tell us who you are?",
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(2, 2),
-                          blurRadius: 5.0,
-                          color: Colors.black38,
-                        ),
-                      ],
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: constraints.maxWidth * 0.04),
+                    child: Text(
+                      "Could you please tell us who you are?",
+                      style: TextStyle(
+                        fontSize: constraints.maxHeight * 0.04,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(2, 2),
+                            blurRadius: 5.0,
+                            color: Colors.black38,
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 15),
                   reusableWidget(
                     textController: fullNameController,
                     labelText: 'Full Name',
                     isPassword: false,
+                    context: context,
                   ),
                   reusableDropdown(
                     labelText: 'Gender',
@@ -67,6 +74,7 @@ class _MyStarting2State extends State<MyStarting2> {
                         selectedGender = newValue;
                       });
                     },
+                    context: context,
                   ),
                   reusableDatePicker(
                     context: context,
@@ -84,7 +92,8 @@ class _MyStarting2State extends State<MyStarting2> {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         )
                       : continueButton(
-                          onPressed: _saveUserData, // Call the function to save data
+                          onPressed: _saveUserData,
+                          context: context,
                         ),
                 ],
               ),

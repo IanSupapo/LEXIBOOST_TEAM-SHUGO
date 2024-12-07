@@ -304,6 +304,7 @@ class _MySignupState extends State<MySignup> {
                     reusableWidget(
                       textController: _emailController,
                       labelText: "Email",
+                      context: context,
                     ),
                     const SizedBox(height: 20),
                     reusableWidget(
@@ -313,6 +314,7 @@ class _MySignupState extends State<MySignup> {
                       isPasswordObscured: _isPasswordObscured,
                       onVisibilityToggle: _togglePasswordVisibility,
                       showEyeIcon: true,
+                      context: context,
                     ),
                     const SizedBox(height: 20),
                     reusableWidget(
@@ -321,6 +323,7 @@ class _MySignupState extends State<MySignup> {
                       isPassword: true,
                       isPasswordObscured: _isPasswordObscured,
                       showEyeIcon: false,
+                      context: context,
                     ),
                     const SizedBox(height: 30),
                     _isLoading
@@ -329,12 +332,13 @@ class _MySignupState extends State<MySignup> {
                           )
                         : signUpButton(
                             onPressed: _signUpWithEmailAndPassword,
+                            context: context,
                           ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       "Or sign up with",
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: MediaQuery.of(context).size.height * 0.02,
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w400,
                         color: Colors.white,
@@ -345,22 +349,34 @@ class _MySignupState extends State<MySignup> {
                       onPressed: signInWithGoogle,
                       imagePath: 'assets/google.png',
                       text: "Sign up with Google",
+                      context: context,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      "Already have an account?",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    loginButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/login');
-                      },
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account?",
+                          style: TextStyle(
+                            fontSize: MediaQuery.of(context).size.height * 0.02,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/login'),
+                          child: Text(
+                            "Login",
+                            style: TextStyle(
+                              fontSize: MediaQuery.of(context).size.height * 0.02,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

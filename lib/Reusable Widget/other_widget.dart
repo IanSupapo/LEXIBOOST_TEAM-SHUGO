@@ -5,16 +5,20 @@ Widget reusableDropdown({
   String? dropdownValue,
   required List<String> dropdownOptions,
   required ValueChanged<String?> onChanged,
+  required BuildContext context,
 }) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
-        padding: const EdgeInsets.only(left: 16.0),
+        padding: EdgeInsets.only(left: screenWidth * 0.04),
         child: Text(
           labelText,
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: screenHeight * 0.02,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w400,
             color: Colors.white,
@@ -23,29 +27,32 @@ Widget reusableDropdown({
       ),
       const SizedBox(height: 5),
       Container(
-        width: 328,
-        height: 55,
+        width: screenWidth * 0.6,
+        height: screenHeight * 0.05,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.black, width: 1),
+          borderRadius: BorderRadius.circular(screenHeight * 0.02),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: dropdownValue,
             isExpanded: true,
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-            style: const TextStyle(
+            icon: Icon(
+              Icons.arrow_drop_down, 
               color: Colors.black,
-              fontSize: 20,
+              size: screenHeight * 0.025,
+            ),
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: screenHeight * 0.02,
               fontFamily: 'Poppins',
             ),
-            items:
-                dropdownOptions.map<DropdownMenuItem<String>>((String value) {
+            items: dropdownOptions.map<DropdownMenuItem<String>>((String value) {
               return DropdownMenuItem<String>(
                 value: value,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Text(value),
                 ),
               );
@@ -60,20 +67,23 @@ Widget reusableDropdown({
 }
 
 Widget reusableDatePicker({
-  required BuildContext context, // Add the BuildContext parameter
+  required BuildContext context,
   required String labelText,
-  DateTime? selectedDate,
-  required ValueChanged<DateTime?> onDateChanged,
+  required DateTime? selectedDate,
+  required Function(DateTime?) onDateChanged,
 }) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final screenHeight = MediaQuery.of(context).size.height;
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
-        padding: const EdgeInsets.only(left: 16.0),
+        padding: EdgeInsets.only(left: screenWidth * 0.04),
         child: Text(
           labelText,
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: screenHeight * 0.02,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w400,
             color: Colors.white,
@@ -81,37 +91,49 @@ Widget reusableDatePicker({
         ),
       ),
       const SizedBox(height: 5),
-      GestureDetector(
-        onTap: () async {
-          DateTime? pickedDate = await showDatePicker(
-            context: context, // Correctly use context here
-            initialDate: selectedDate ?? DateTime.now(),
-            firstDate: DateTime(1900),
-            lastDate: DateTime.now(),
-          );
-          onDateChanged(pickedDate);
-        },
-        child: Container(
-          width: 328,
-          height: 55,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.black, width: 1),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                selectedDate != null
-                    ? "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"
-                    : "Select your birthday",
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontFamily: 'Poppins',
-                  color: Colors.black54,
-                ),
+      Container(
+        width: screenWidth * 0.6,
+        height: screenHeight * 0.05,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black, width: 1),
+          borderRadius: BorderRadius.circular(screenHeight * 0.02),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: selectedDate ?? DateTime.now(),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) {
+                onDateChanged(picked);
+              }
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    selectedDate != null
+                        ? "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"
+                        : "Select Date",
+                    style: TextStyle(
+                      fontSize: screenHeight * 0.02,
+                      fontFamily: 'Poppins',
+                      color: Colors.black,
+                    ),
+                  ),
+                  Icon(
+                    Icons.calendar_today,
+                    size: screenHeight * 0.025,
+                    color: Colors.black,
+                  ),
+                ],
               ),
             ),
           ),

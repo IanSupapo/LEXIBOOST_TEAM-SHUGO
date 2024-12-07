@@ -102,11 +102,13 @@ class _MyForgotState extends State<MyForgot> {
             reusableWidget(
               textController: _emailController,
               labelText: "Email",
+              context: context,
             ),
             const SizedBox(height: 30),
             resetPasswordButton(
               onPressed: _resetPassword,
               text: "Reset Password",
+              context: context,
             ),
           ],
         ),
