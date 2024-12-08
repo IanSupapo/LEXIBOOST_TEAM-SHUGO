@@ -60,7 +60,15 @@ class _MyGamerState extends State<MyGamer> {
           .get();
           
       return snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Ensure question and answer exist
+            if (data['question'] != null && data['answer'] != null) {
+              return data;
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()  // Filter out null values
           .toList();
     } catch (e) {
       print('Error fetching level 1 questions: $e');
@@ -75,7 +83,15 @@ class _MyGamerState extends State<MyGamer> {
           .get();
           
       return snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            // Ensure question and answer exist
+            if (data['question'] != null && data['answer'] != null) {
+              return data;
+            }
+            return null;
+          })
+          .whereType<Map<String, dynamic>>()  // Filter out null values
           .toList();
     } catch (e) {
       print('Error fetching level 2 questions: $e');
@@ -221,6 +237,20 @@ class _MyGamerState extends State<MyGamer> {
   }
 
   Widget _buildQuestionScreen(Map<String, dynamic> question) {
+    // Add null check for question
+    if (question['question'] == null) {
+      return const Center(
+        child: Text(
+          'Error loading question',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 20,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -263,7 +293,7 @@ class _MyGamerState extends State<MyGamer> {
               children: [
                 // Question text
                 Text(
-                  question['question'],
+                  question['question'].toString(),  // Convert to string
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
