@@ -35,67 +35,56 @@ class _MyGamerState extends State<MyGamer> {
   String currentAnswer = '';
   bool isCorrect = false;
 
+  // Add these variables
+  late Stream<DocumentSnapshot> _gameStream;
+  bool _isLoadingQuestions = true;
+  
   @override
   void initState() {
     super.initState();
+    _gameStream = _firestore
+        .collection('game_rooms')
+        .doc(widget.roomId)
+        .snapshots();
     _initializeGame();
   }
 
   Future<void> _initializeGame() async {
-    // Fetch questions from both level1 and level2
-    final level1Questions = await _fetchLevel1Questions();
-    final level2Questions = await _fetchLevel2Questions();
-    
-    // Combine questions from both levels
-    final allQuestions = [...level1Questions, ...level2Questions];
-    questions = _selectRandomQuestions(allQuestions, maxRounds);
-    trophyReward = Random().nextInt(6) + 15;
-    setState(() {});
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchLevel1Questions() async {
     try {
-      final QuerySnapshot snapshot = await _firestore
-          .collection('level1')
-          .get();
-          
-      return snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            // Ensure question and answer exist
-            if (data['question'] != null && data['answer'] != null) {
-              return data;
-            }
-            return null;
-          })
-          .whereType<Map<String, dynamic>>()  // Filter out null values
-          .toList();
-    } catch (e) {
-      print('Error fetching level 1 questions: $e');
-      return [];
-    }
-  }
+      // Fetch questions in parallel using Future.wait
+      final futures = await Future.wait([
+        _firestore.collection('level1')
+            .limit(10)  // Limit the number of documents
+            .get(),
+        _firestore.collection('level2')
+            .limit(10)  // Limit the number of documents
+            .get(),
+      ]);
 
-  Future<List<Map<String, dynamic>>> _fetchLevel2Questions() async {
-    try {
-      final QuerySnapshot snapshot = await _firestore
-          .collection('level2')
-          .get();
-          
-      return snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            // Ensure question and answer exist
-            if (data['question'] != null && data['answer'] != null) {
-              return data;
-            }
-            return null;
-          })
-          .whereType<Map<String, dynamic>>()  // Filter out null values
+      final level1Questions = futures[0].docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .where((data) => data['question'] != null && data['answer'] != null)
           .toList();
+
+      final level2Questions = futures[1].docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .where((data) => data['question'] != null && data['answer'] != null)
+          .toList();
+
+      final allQuestions = [...level1Questions, ...level2Questions];
+      questions = _selectRandomQuestions(allQuestions, maxRounds);
+      trophyReward = Random().nextInt(6) + 15;
+
+      // Cache the questions in the game room document
+      await _firestore.collection('game_rooms').doc(widget.roomId).update({
+        'gameState.questions': questions,
+      });
+
+      setState(() {
+        _isLoadingQuestions = false;
+      });
     } catch (e) {
-      print('Error fetching level 2 questions: $e');
-      return [];
+      print('Error initializing game: $e');
     }
   }
 
@@ -209,15 +198,41 @@ class _MyGamerState extends State<MyGamer> {
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection('game_rooms').doc(widget.roomId).snapshots(),
+        stream: _gameStream,
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            );
           }
 
           final gameData = snapshot.data!.data() as Map<String, dynamic>;
           final gameState = gameData['gameState'];
-          
+
+          if (_isLoadingQuestions) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Loading questions...',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           if (gameState == null) {
             return const Center(child: Text('Waiting for game to start...'));
           }

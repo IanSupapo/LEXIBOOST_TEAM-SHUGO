@@ -67,40 +67,35 @@ class _GameRoomState extends State<GameRoom> {
 
   Future<void> _initializeGameState() async {
     try {
-      final questions = await _fetchQuestionsFromAllLevels();
-      final selectedQuestions = _selectRandomQuestions(questions, 8);
-      final trophyReward = Random().nextInt(6) + 15;
+      final futures = await Future.wait([
+        FirebaseFirestore.instance.collection('level1').limit(10).get(),
+        FirebaseFirestore.instance.collection('level2').limit(10).get(),
+      ]);
 
-      final roomDoc = await FirebaseFirestore.instance
+      final allQuestions = [
+        ...futures[0].docs.map((doc) => doc.data()),
+        ...futures[1].docs.map((doc) => doc.data()),
+      ];
+      
+      final selectedQuestions = _selectRandomQuestions(allQuestions, 8);
+      final trophyReward = Random().nextInt(6) + 15;
+      await FirebaseFirestore.instance
           .collection('game_rooms')
           .doc(widget.roomId)
-          .get();
-
-      final roomData = roomDoc.data();
-      if (roomData != null) {
-        final players = List<String>.from(roomData['players']);
-
-        await FirebaseFirestore.instance
-            .collection('game_rooms')
-            .doc(widget.roomId)
-            .update({
-          'gameState': {
-            'questions': selectedQuestions,
-            'currentRound': 1,
-            'playerProgress': {
-              players[0]: {'score': 0, 'currentQuestion': 0},
-              players[1]: {'score': 0, 'currentQuestion': 0},
-            },
-            'trophyReward': trophyReward,
-            'winner': null,
-            'isComplete': false,
-            'startTime': FieldValue.serverTimestamp(),
+          .update({
+        'gameState': {
+          'questions': selectedQuestions,
+          'currentRound': 1,
+          'playerProgress': {
+            user!.uid: {'score': 0, 'currentQuestion': 0},
           },
-          'status': 'in_progress',
-        });
+          'trophyReward': trophyReward,
+          'winner': null,
+          'isComplete': false,
+        },
+        'status': 'in_progress',
+      });
 
-        print('Game state initialized successfully');
-      }
     } catch (e) {
       print('Error initializing game state: $e');
     }
