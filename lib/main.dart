@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shugo/Final%20Phase/account.dart';
 import 'package:shugo/Final%20Phase/privacy.dart';
 import 'package:shugo/Final%20Phase/terms.dart';
+import 'package:shugo/admin/admindashboard.dart';
+import 'package:shugo/admin/loginadmin.dart';
+import 'package:shugo/admin/manage.dart';
 
 import 'package:shugo/phase1/Starting/starting.dart';
 import 'package:shugo/phase1/Starting/starting2.dart';
@@ -28,22 +31,16 @@ import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shugo/services/Firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeFirebase();
 
-  // Initialize multiplayer collection (run this once)
-  final firestoreServices = FirestoreServices();
-  try {
-    await firestoreServices.initializeMultiplayerCollection();
-  } catch (e) {
-    print('Error setting up multiplayer: $e');
-  }
-
+  // Remove the multiplayer initialization for now
   runApp(const MyApp());
 }
-
 
 Future<void> initializeFirebase() async {
   if (kIsWeb) {
@@ -51,15 +48,15 @@ Future<void> initializeFirebase() async {
     await Firebase.initializeApp(
       options: const FirebaseOptions(
         apiKey: "AIzaSyAjlu_d1T3MBlNrpdefh2mMkycj0OJGWqs",
-          authDomain: "lexiboost-7de91.firebaseapp.com",
-          projectId: "lexiboost-7de91",
-          storageBucket: "lexiboost-7de91.firebasestorage.app",
-          messagingSenderId: "303696333249",
-          appId: "1:303696333249:web:a999b16984515765d60740",   
-          measurementId: "G-54FTGB3MMZ",
+        authDomain: "lexiboost-7de91.firebaseapp.com",
+        projectId: "lexiboost-7de91",
+        storageBucket: "lexiboost-7de91.firebasestorage.app",
+        messagingSenderId: "303696333249",
+        appId: "1:303696333249:web:a999b16984515765d60740",   
+        measurementId: "G-54FTGB3MMZ",
       ),
-  );  
-    debugPrint("Firebase  successfully initialized to Web.");
+    );  
+    debugPrint("Firebase successfully initialized to Web.");
   } else {
     await Firebase.initializeApp();
     debugPrint("Firebase successfully initialized to Mobile.");
@@ -103,6 +100,9 @@ class MyApp extends StatelessWidget {
         '/privacy' : (context) => const MyPrivacy(),
         '/terms' : (context) => const MyTerms(),
         '/gameselect' : (context) => const MySelect(),
+        '/loginadmin' : (context) => const MyAdmin(),
+        '/dashboard' : (context) => const MyDashboard(),
+        '/manage' : (context) => const MyManage(),
 
 
       },
