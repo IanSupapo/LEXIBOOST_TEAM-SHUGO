@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shugo/Reusable%20Widget/adminreusable.dart';
+import 'package:shugo/admin/admindashboard.dart';
 
 class MyAdmin extends StatefulWidget {
   const MyAdmin({super.key});
@@ -13,14 +14,10 @@ class MyAdmin extends StatefulWidget {
 class _MyAdminState extends State<MyAdmin> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _isPasswordVisible = false;
   bool _isLoading = false;
-
-  // Add admin credentials
-  final String adminEmail = "AdminLexi@gmail.com";
-  final String adminPassword = "AdminLexi321";
 
   Future<void> signInAdmin() async {
     setState(() {
@@ -28,39 +25,70 @@ class _MyAdminState extends State<MyAdmin> {
     });
 
     try {
-      // First check admin document
-      QuerySnapshot adminSnapshot = await _firestore
+      // First authenticate with Firebase
+      await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // After authentication, check admin status
+      DocumentSnapshot adminDoc = await _firestore
           .collection('Admin')
-          .where('Account', isEqualTo: _emailController.text.trim())
+          .doc('Admin123')
           .get();
 
-      if (adminSnapshot.docs.isEmpty) {
+      if (!adminDoc.exists) {
+        await _auth.signOut(); // Sign out if not admin
+        throw 'Admin configuration not found';
+      }
+
+      Map<String, dynamic> adminData = adminDoc.data() as Map<String, dynamic>;
+
+      // Verify email matches
+      String adminEmail = adminData['Account'];
+      if (adminEmail != _emailController.text.trim()) {
+        await _auth.signOut(); // Sign out if not admin
         throw 'Not authorized as admin';
       }
 
-      // Then try Firebase Auth
-      try {
-        await _auth.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+      // If we get here, user is authenticated and is admin
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyDashboard()),
         );
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found') {
-          throw 'Admin account not found';
-        } else if (e.code == 'wrong-password') {
-          throw 'Invalid password';
-        } else {
-          throw 'Authentication error: ${e.message}';
-        }
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Authentication failed';
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'Admin account not found';
+          break;
+        case 'wrong-password':
+          message = 'Invalid password';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email format';
+          break;
+        default:
+          message = e.message ?? 'Authentication error';
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } finally {

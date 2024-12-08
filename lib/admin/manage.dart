@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:shugo/services/user_management.dart';
+
 
 class MyManage extends StatefulWidget {
   const MyManage({super.key});
@@ -54,68 +56,6 @@ class _MyManageState extends State<MyManage> {
               backgroundColor: const Color(0xFF0486C7),
             ),
             child: const Text('Send'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(String userId, String userName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete User'),
-        content: Text('Are you sure you want to delete $userName?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                // Delete from Firestore collections using batch
-                WriteBatch batch = _firestore.batch();
-
-                // Delete user document
-                batch.delete(_firestore.collection('users').doc(userId));
-                
-                // Delete player document
-                batch.delete(_firestore.collection('player').doc(userId));
-
-                // Get and delete mail documents
-                QuerySnapshot mailDocs = await _firestore
-                    .collection('mail')
-                    .where('recipientId', isEqualTo: userId)
-                    .get();
-                
-                for (var doc in mailDocs.docs) {
-                  batch.delete(doc.reference);
-                }
-
-                // Commit the batch
-                await batch.commit();
-
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User data deleted successfully')),
-                  );
-                }
-              } catch (e) {
-                print('Delete error: $e');
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error deleting user data: $e')),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
-            child: const Text('Delete'),
           ),
         ],
       ),
@@ -257,7 +197,7 @@ class _MyManageState extends State<MyManage> {
                                   ),
                                   DataColumn(
                                     label: Text(
-                                      'Actions',
+                                      'Message',
                                       style: TextStyle(
                                         fontFamily: 'Poppins',
                                         fontWeight: FontWeight.bold,
@@ -286,26 +226,13 @@ class _MyManageState extends State<MyManage> {
                                       DataCell(Text(playerInfo['trophy']?.toString() ?? '0')),
                                       DataCell(Text(createdAt)),
                                       DataCell(
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.message),
-                                              color: const Color(0xFF0486C7),
-                                              onPressed: () => _showMessageDialog(
-                                                userDoc.id,
-                                                userData['fullname'] ?? 'Unknown User',
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete),
-                                              color: Colors.red,
-                                              onPressed: () => _showDeleteConfirmation(
-                                                userDoc.id,
-                                                userData['fullname'] ?? 'Unknown User',
-                                              ),
-                                            ),
-                                          ],
+                                        IconButton(
+                                          icon: const Icon(Icons.message),
+                                          color: const Color(0xFF0486C7),
+                                          onPressed: () => _showMessageDialog(
+                                            userDoc.id,
+                                            userData['fullname'] ?? 'Unknown User',
+                                          ),
                                         ),
                                       ),
                                     ],
