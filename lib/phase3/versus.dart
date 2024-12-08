@@ -169,7 +169,7 @@ class MyVersus extends StatelessWidget {
             width: screenWidth * 0.7,
             color: const Color.fromARGB(255, 206, 247, 160),
             onPressed: () {
-              print("Play with friends button pressed");
+              Navigator.pushNamed(context, '/gameselect');
             },
             child: const Text(
               "Play with friend",

@@ -22,6 +22,12 @@ class _GameRoomState extends State<GameRoom> {
       .doc(widget.roomId)
       .snapshots();
 
+  String _generateRoomCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -29,7 +35,6 @@ class _GameRoomState extends State<GameRoom> {
   }
 
   Future<void> _setupRoom() async {
-    // Get current room data
     final roomDoc = await FirebaseFirestore.instance
         .collection('game_rooms')
         .doc(widget.roomId)
@@ -37,9 +42,17 @@ class _GameRoomState extends State<GameRoom> {
 
     final roomData = roomDoc.data();
     if (roomData != null) {
+      if (!roomData.containsKey('roomCode')) {
+        final roomCode = _generateRoomCode();
+        await FirebaseFirestore.instance
+            .collection('game_rooms')
+            .doc(widget.roomId)
+            .update({
+          'roomCode': roomCode,
+        });
+      }
+
       final players = List<String>.from(roomData['players'] ?? []);
-      
-      // If this is the second player joining
       if (players.length == 2 && !players.contains(user!.uid)) {
         await FirebaseFirestore.instance
             .collection('game_rooms')
@@ -152,16 +165,14 @@ class _GameRoomState extends State<GameRoom> {
           final roomData = snapshot.data!.data() as Map<String, dynamic>;
           final players = List<String>.from(roomData['players'] ?? []);
           final status = roomData['status'] as String?;
+          final roomCode = roomData['roomCode'] as String?;
 
-          // Handle game state transitions
           if (players.length == 2) {
             if (status == 'ready' && roomData['gameState'] == null) {
-              // Initialize game when both players are ready
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _initializeGameState();
               });
             } else if (status == 'in_progress' && roomData['gameState'] != null) {
-              // Start game when initialized
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _startGame(players);
               });
@@ -174,7 +185,7 @@ class _GameRoomState extends State<GameRoom> {
               children: [
                 Container(
                   width: MediaQuery.of(context).size.width * 0.8,
-                  height: MediaQuery.of(context).size.height * 0.6,
+                  height: MediaQuery.of(context).size.height * 0.7,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -184,14 +195,35 @@ class _GameRoomState extends State<GameRoom> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.4,
-                        height: MediaQuery.of(context).size.height * 0.3,
+                        width: MediaQuery.of(context).size.width * 0.25,
+                        height: MediaQuery.of(context).size.height * 0.2,
                         child: Image.asset(
                           'assets/patience.gif',
                           fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 30),
+                      if (roomCode != null) ...[
+                        const Text(
+                          'Room Code:',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          roomCode,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                       Text(
                         'Players: ${players.length}/2',
                         style: const TextStyle(
