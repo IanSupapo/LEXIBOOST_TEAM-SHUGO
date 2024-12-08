@@ -24,7 +24,7 @@ class _MyGamerState extends State<MyGamer> {
   final user = FirebaseAuth.instance.currentUser;
   
   int currentRound = 1;
-  int maxRounds = 8;
+  int maxRounds = 5;
   bool isGameComplete = false;
   String? winner;
   int trophyReward = 0;
@@ -54,13 +54,12 @@ class _MyGamerState extends State<MyGamer> {
       // Fetch questions in parallel using Future.wait
       final futures = await Future.wait([
         _firestore.collection('level1')
-            .limit(10)  // Limit the number of documents
             .get(),
         _firestore.collection('level2')
-            .limit(10)  // Limit the number of documents
             .get(),
       ]);
 
+      // Get all questions and shuffle them
       final level1Questions = futures[0].docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .where((data) => data['question'] != null && data['answer'] != null)
@@ -71,8 +70,12 @@ class _MyGamerState extends State<MyGamer> {
           .where((data) => data['question'] != null && data['answer'] != null)
           .toList();
 
+      // Combine and shuffle all questions
       final allQuestions = [...level1Questions, ...level2Questions];
-      questions = _selectRandomQuestions(allQuestions, maxRounds);
+      allQuestions.shuffle(Random());
+      
+      // Take first 5 questions
+      questions = allQuestions.take(5).toList();
       trophyReward = Random().nextInt(6) + 15;
 
       // Cache the questions in the game room document
@@ -86,14 +89,6 @@ class _MyGamerState extends State<MyGamer> {
     } catch (e) {
       print('Error initializing game: $e');
     }
-  }
-
-  List<Map<String, dynamic>> _selectRandomQuestions(List<Map<String, dynamic>> questions, int count) {
-    if (questions.isEmpty) return [];
-    
-    final random = Random();
-    questions.shuffle(random);
-    return questions.take(count).toList();
   }
 
   Future<void> _checkAnswer() async {

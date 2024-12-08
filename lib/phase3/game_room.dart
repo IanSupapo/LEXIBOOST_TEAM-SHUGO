@@ -68,8 +68,8 @@ class _GameRoomState extends State<GameRoom> {
   Future<void> _initializeGameState() async {
     try {
       final futures = await Future.wait([
-        FirebaseFirestore.instance.collection('level1').limit(10).get(),
-        FirebaseFirestore.instance.collection('level2').limit(10).get(),
+        FirebaseFirestore.instance.collection('level1').get(),
+        FirebaseFirestore.instance.collection('level2').get(),
       ]);
 
       final allQuestions = [
@@ -77,8 +77,10 @@ class _GameRoomState extends State<GameRoom> {
         ...futures[1].docs.map((doc) => doc.data()),
       ];
       
-      final selectedQuestions = _selectRandomQuestions(allQuestions, 8);
+      allQuestions.shuffle(Random());
+      final selectedQuestions = allQuestions.take(5).toList();
       final trophyReward = Random().nextInt(6) + 15;
+
       await FirebaseFirestore.instance
           .collection('game_rooms')
           .doc(widget.roomId)
