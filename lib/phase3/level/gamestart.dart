@@ -77,6 +77,13 @@ class _MyGamerState extends State<MyGamer> {
 
           final allQuestions = snapshot.docs
               .map((doc) => doc.data())
+              .where((data) => 
+                data != null && 
+                data['question'] != null && 
+                data['question'].toString().isNotEmpty &&
+                data['answer'] != null &&
+                data['answer'].toString().isNotEmpty
+              )
               .toList();
 
           allQuestions.shuffle(Random());
@@ -132,8 +139,13 @@ class _MyGamerState extends State<MyGamer> {
     if (currentQuestionIndex >= questions.length) return;
     
     final question = questions[currentQuestionIndex];
-    final correctAnswer = question['answer'].toString().toLowerCase();
+    final correctAnswer = question['answer']?.toString().toLowerCase() ?? '';
     final userAnswer = _answerController.text.trim().toLowerCase();
+
+    if (correctAnswer.isEmpty) {
+      print('Error: No answer found for question');
+      return;
+    }
 
     setState(() {
       isCorrect = userAnswer == correctAnswer;
@@ -318,6 +330,8 @@ class _MyGamerState extends State<MyGamer> {
   }
 
   Widget _buildQuestionScreen(Map<String, dynamic> question) {
+    final questionText = question['question']?.toString() ?? 'Loading question...';
+    
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -360,7 +374,7 @@ class _MyGamerState extends State<MyGamer> {
               children: [
                 // Question text
                 Text(
-                  question['question'],
+                  questionText,
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
