@@ -34,6 +34,8 @@ class _MyGamerState extends State<MyGamer> {
   int currentQuestionIndex = 0;
   String currentAnswer = '';
   bool isCorrect = false;
+  bool showAnswer = false;
+  Color buttonColor = Colors.blue.shade400;
 
   // Add these variables
   late Stream<DocumentSnapshot> _gameStream;
@@ -92,16 +94,23 @@ class _MyGamerState extends State<MyGamer> {
     final correctAnswer = question['answer'].toString().toLowerCase();
     final userAnswer = _answerController.text.trim().toLowerCase();
 
-    if (!mounted) return;
     setState(() {
       isCorrect = userAnswer == correctAnswer;
+      showAnswer = true;
+      buttonColor = isCorrect ? Colors.green : Colors.red;
     });
 
     if (isCorrect) {
-      if (!mounted) return;
+      // Show correct answer feedback
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Correct!'),
+          content: Text(
+            'Correct!',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+            ),
+          ),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 1),
         ),
@@ -118,26 +127,46 @@ class _MyGamerState extends State<MyGamer> {
             FieldValue.increment(1),
       });
 
+      // Wait for animation
+      await Future.delayed(const Duration(seconds: 1));
+
       if (!mounted) return;
       setState(() {
         currentQuestionIndex++;
         currentRound++;
         _answerController.clear();
+        showAnswer = false;
+        buttonColor = Colors.blue.shade400;
 
         if (currentRound > maxRounds) {
           _endGame();
         }
       });
     } else {
-      if (!mounted) return;
+      // Show incorrect answer feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Incorrect! The answer is: $correctAnswer'),
+          content: Text(
+            'Incorrect! The answer is: $correctAnswer',
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+            ),
+          ),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
         ),
       );
-      _answerController.clear();
+
+      // Wait for animation
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+      setState(() {
+        _answerController.clear();
+        showAnswer = false;
+        buttonColor = Colors.blue.shade400;
+      });
     }
   }
 
@@ -243,20 +272,6 @@ class _MyGamerState extends State<MyGamer> {
   }
 
   Widget _buildQuestionScreen(Map<String, dynamic> question) {
-    // Add null check for question
-    if (question['question'] == null) {
-      return const Center(
-        child: Text(
-          'Error loading question',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 20,
-            color: Colors.white,
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -299,7 +314,7 @@ class _MyGamerState extends State<MyGamer> {
               children: [
                 // Question text
                 Text(
-                  question['question'].toString(),  // Convert to string
+                  question['question'],
                   style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
@@ -332,10 +347,10 @@ class _MyGamerState extends State<MyGamer> {
                   onPressed: _checkAnswer,
                   height: 50,
                   width: 200,
-                  color: Colors.blue.shade400,
-                  child: const Text(
-                    'Submit',
-                    style: TextStyle(
+                  color: buttonColor,
+                  child: Text(
+                    showAnswer ? (isCorrect ? 'Correct!' : 'Wrong!') : 'Submit',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontFamily: 'Poppins',
                       fontSize: 18,
