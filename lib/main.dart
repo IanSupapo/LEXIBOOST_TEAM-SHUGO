@@ -1,9 +1,9 @@
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shugo/Final%20Phase/account.dart';
-import 'package:shugo/PP.dart';
-import 'package:shugo/TS.dart';
+import 'package:shugo/Final%20Phase/privacy.dart';
+import 'package:shugo/Final%20Phase/terms.dart';
+
 import 'package:shugo/phase1/Starting/starting.dart';
 import 'package:shugo/phase1/Starting/starting2.dart';
 import 'package:shugo/phase1/Starting/starting3.dart';
@@ -79,8 +79,6 @@ class MyApp extends StatelessWidget {
         '/starting3': (context) => const MyStarting3(),
         '/starting4': (context) => const MyStarting4(),
         '/home' : (context) => const MyHome(),
-        '/PP' : (context) => const PrivacyPolicyPage(),
-        '/TS' : (context) => const  TermsOfServicePage(),
         '/profile' : (context) => const MyProfile(),
         '/contact' : (context) => const MyContact(),
         '/achievement' : (contact) => const MyContact(),
@@ -93,6 +91,8 @@ class MyApp extends StatelessWidget {
         '/play2' : (context) => const MyPlay2(),
         '/play3' : (context) => const MyPlay3(),
         '/account' : (context) => const MyAccount(),
+        '/privacy' : (context) => const MyPrivacy(),
+        '/terms' : (context) => const MyTerms(),
 
 
 

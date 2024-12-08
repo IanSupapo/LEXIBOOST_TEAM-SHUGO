@@ -40,69 +40,39 @@ class _MyProfileState extends State<MyProfile> {
         return;
       }
 
-      if (kIsWeb) {
-        final bytes = await image.readAsBytes();
-        await _uploadBytes(bytes, image.name, isBackground);
-      } else {
-        final file = File(image.path);
-        await _uploadFile(file, isBackground);
+      // Read image bytes and convert to base64
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      // Update Firestore with base64 string
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+          isBackground ? 'backgroundImage' : 'image': base64Image,
+        });
+
+        setState(() {
+          if (!isBackground) {
+            _imageUrl = base64Image;
+          }
+        });
       }
+
     } catch (e) {
       print('Error picking/uploading image: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e')),
+        );
+      }
     } finally {
       setState(() {
         _isUploadingImage = false;
       });
-    }
-  }
-
-  Future<void> _uploadBytes(Uint8List bytes, String fileName, bool isBackground) async {
-    try {
-      final String folder = isBackground ? 'background_images' : 'profile_images';
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child(folder)
-          .child('${FirebaseAuth.instance.currentUser!.uid}/$fileName');
-      
-      await ref.putData(bytes);
-      final url = await ref.getDownloadURL();
-      
-      final field = isBackground ? 'backgroundImageUrl' : 'profileImageUrl';
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser!.uid)
-          .update({field: url});
-          
-      setState(() {
-        if (!isBackground) _imageUrl = url;
-      });
-    } catch (e) {
-      print('Error uploading image: $e');
-    }
-  }
-
-  Future<void> _uploadFile(File file, bool isBackground) async {
-    try {
-      final String folder = isBackground ? 'background_images' : 'profile_images';
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child(folder)
-          .child('${FirebaseAuth.instance.currentUser!.uid}/${DateTime.now().millisecondsSinceEpoch}');
-      
-      await ref.putFile(file);
-      final url = await ref.getDownloadURL();
-      
-      final field = isBackground ? 'backgroundImageUrl' : 'profileImageUrl';
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser!.uid)
-          .update({field: url});
-          
-      setState(() {
-        if (!isBackground) _imageUrl = url;
-      });
-    } catch (e) {
-      print('Error uploading image: $e');
     }
   }
 

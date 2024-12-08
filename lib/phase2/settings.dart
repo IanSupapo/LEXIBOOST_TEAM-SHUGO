@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:animated_button/animated_button.dart'; // Import AnimatedButton package
+import 'package:animated_button/animated_button.dart';
+import 'package:shugo/Final%20Phase/privacy.dart'; // Import AnimatedButton package
+import 'package:shugo/Final%20Phase/terms.dart'; // Import Terms package
 
 class MySettings extends StatefulWidget {
   const MySettings({super.key});
@@ -44,14 +46,22 @@ class _MySettingsState extends State<MySettings> {
                       AnimatedDividerButton(
                         text: "Privacy Policy",
                         onTap: () {
-                          // Add navigation or action here
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MyPrivacy(),
+                            ),
+                          );
                         },
                       ),
                       const SizedBox(height: 15),
                       AnimatedDividerButton(
                         text: "Terms of Service",
                         onTap: () {
-                          // Add navigation or action here
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const MyTerms()),
+                          );
                         },
                       ),
                       const SizedBox(height: 15),

@@ -8,6 +8,7 @@ Widget reusableWidget({
   bool isPasswordObscured = true,
   bool showEyeIcon = true,
   VoidCallback? onVisibilityToggle,
+  Color labelColor = Colors.white,
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
@@ -20,18 +21,19 @@ Widget reusableWidget({
   final double iconSize = screenHeight * 0.025;  // 2.5% of screen height
 
   return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: CrossAxisAlignment.center,
     children: [
       Padding(
-        padding: EdgeInsets.only(left: screenWidth * 0.04),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
         child: Text(
           labelText,
           style: TextStyle(
             fontSize: labelSize,
             fontFamily: 'Poppins',
             fontWeight: FontWeight.w400,
-            color: Colors.white,
+            color: labelColor,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
       const SizedBox(height: 5),
@@ -49,6 +51,7 @@ Widget reusableWidget({
           keyboardType: _getKeyboardType(labelText),
           autocorrect: !_isSpecialField(labelText),
           enableSuggestions: !_isSpecialField(labelText),
+          textAlign: TextAlign.left,
           style: TextStyle(
             color: Colors.black,
             fontSize: inputTextSize,
