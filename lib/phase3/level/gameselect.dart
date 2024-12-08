@@ -42,12 +42,22 @@ class _MySelectState extends State<MySelect> {
 
   Future<void> _joinRoom() async {
     final roomCode = _roomCodeController.text.trim();
-    if (roomCode.isEmpty) return;
+    if (roomCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a room code')),
+      );
+      return;
+    }
 
     try {
-      final roomDoc = await _firestore.collection('game_rooms').doc(roomCode).get();
-      
-      if (!roomDoc.exists) {
+      // Find the room document by room code
+      final querySnapshot = await _firestore
+          .collection('game_rooms')
+          .where('roomCode', isEqualTo: roomCode)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Room not found')),
@@ -56,8 +66,12 @@ class _MySelectState extends State<MySelect> {
         return;
       }
 
-      final roomData = roomDoc.data()!;
-      if (roomData['players'].length >= 2) {
+      final roomDoc = querySnapshot.docs.first;
+      final roomData = roomDoc.data();
+      final players = List<String>.from(roomData['players'] ?? []);
+
+      // Check if room is full
+      if (players.length >= 2) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Room is full')),
@@ -66,16 +80,34 @@ class _MySelectState extends State<MySelect> {
         return;
       }
 
+      // Check if player is not already in the room
+      if (!players.contains(user!.uid)) {
+        // Add player to room
+        await _firestore
+            .collection('game_rooms')
+            .doc(roomDoc.id)
+            .update({
+          'players': FieldValue.arrayUnion([user!.uid]),
+          'status': 'ready',
+        });
+      }
+
+      // Navigate to game room
       if (mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => GameRoom(roomId: roomCode),
+            builder: (context) => GameRoom(roomId: roomDoc.id),
           ),
         );
       }
     } catch (e) {
       print('Error joining room: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error joining room: $e')),
+        );
+      }
     }
   }
 
