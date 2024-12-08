@@ -54,8 +54,10 @@ class _MyGamerState extends State<MyGamer> {
     if (!mounted) return;
     
     try {
+      // Fetch from multiplayer collection
       final snapshot = await _firestore
-          .collection('level1')
+          .collection('multiplayer')
+          .where('level', isEqualTo: 1)  // Only get level 1 questions for now
           .get();
 
       final allQuestions = snapshot.docs

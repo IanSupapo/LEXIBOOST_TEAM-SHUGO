@@ -27,12 +27,19 @@ import 'package:shugo/phase3/level/play3.dart';
 import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shugo/services/Firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initializeFirebase();
- 
+  await initializeFirebase();
 
+  // Initialize multiplayer collection (run this once)
+  final firestoreServices = FirestoreServices();
+  try {
+    await firestoreServices.initializeMultiplayerCollection();
+  } catch (e) {
+    print('Error setting up multiplayer: $e');
+  }
 
   runApp(const MyApp());
 }

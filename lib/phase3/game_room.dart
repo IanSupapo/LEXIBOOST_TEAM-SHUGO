@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shugo/phase3/level/gamestart.dart';
@@ -16,38 +18,53 @@ class GameRoom extends StatefulWidget {
 class _GameRoomState extends State<GameRoom> {
   final FirestoreServices _firestoreServices = FirestoreServices();
   final user = FirebaseAuth.instance.currentUser;
-
+  
   Stream<DocumentSnapshot> get roomStream => FirebaseFirestore.instance
       .collection('game_rooms')
       .doc(widget.roomId)
       .snapshots();
 
-  String _generateRoomCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final random = Random();
-    return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
-  }
+  late final _matchRef = FirebaseFirestore.instance
+      .collection('game_rooms')
+      .doc(widget.roomId)
+      .withConverter<Map<String, dynamic>>(
+        fromFirestore: (snapshot, _) => snapshot.data() ?? {},
+        toFirestore: (data, _) => data,
+      );
+
+  StreamSubscription? _gameStateSubscription;
 
   @override
   void initState() {
     super.initState();
     _setupRoom();
+    _listenToGameState();
+  }
+
+  void _listenToGameState() {
+    _gameStateSubscription = _matchRef.snapshots().listen((snapshot) {
+      if (!mounted) return;
+
+      final gameState = snapshot.data()?['gameState'];
+      final status = snapshot.data()?['status'] as String?;
+      final players = List<String>.from(snapshot.data()?['players'] ?? []);
+
+      if (players.length == 2 && status == 'ready' && gameState == null) {
+        _initializeGameState();
+      } else if (status == 'in_progress' && gameState != null) {
+        _startGame();
+      }
+    });
   }
 
   Future<void> _setupRoom() async {
-    final roomDoc = await FirebaseFirestore.instance
-        .collection('game_rooms')
-        .doc(widget.roomId)
-        .get();
-
+    final roomDoc = await _matchRef.get();
     final roomData = roomDoc.data();
+    
     if (roomData != null) {
       if (!roomData.containsKey('roomCode')) {
         final roomCode = _generateRoomCode();
-        await FirebaseFirestore.instance
-            .collection('game_rooms')
-            .doc(widget.roomId)
-            .update({
+        await _matchRef.update({
           'roomCode': roomCode,
         });
       }
@@ -101,7 +118,7 @@ class _GameRoomState extends State<GameRoom> {
     }
   }
 
-  void _startGame(List<String> players) {
+  void _startGame() {
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -113,6 +130,18 @@ class _GameRoomState extends State<GameRoom> {
         ),
       );
     }
+  }
+
+  String _generateRoomCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
+  }
+
+  @override
+  void dispose() {
+    _gameStateSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -169,7 +198,7 @@ class _GameRoomState extends State<GameRoom> {
               });
             } else if (status == 'in_progress' && roomData['gameState'] != null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                _startGame(players);
+                _startGame();
               });
             }
           }

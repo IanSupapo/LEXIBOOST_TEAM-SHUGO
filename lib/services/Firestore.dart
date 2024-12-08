@@ -67,4 +67,54 @@ class FirestoreServices {
       throw e;
     }
   }
+
+  Future<void> initializeMultiplayerCollection() async {
+    try {
+      // Get questions from all levels
+      final level1Questions = await _db.collection('level1').get();
+      final level2Questions = await _db.collection('level2').get();
+      final level3Questions = await _db.collection('level3').get();
+
+      // Batch write for better performance
+      final batch = _db.batch();
+
+      // Process level 1 questions
+      for (var doc in level1Questions.docs) {
+        final data = doc.data();
+        data['level'] = 1;  // Add level identifier
+        batch.set(
+          _db.collection('multiplayer').doc(),
+          data
+        );
+      }
+
+      // Process level 2 questions
+      for (var doc in level2Questions.docs) {
+        final data = doc.data();
+        data['level'] = 2;  // Add level identifier
+        batch.set(
+          _db.collection('multiplayer').doc(),
+          data
+        );
+      }
+
+      // Process level 3 questions
+      for (var doc in level3Questions.docs) {
+        final data = doc.data();
+        data['level'] = 3;  // Add level identifier
+        batch.set(
+          _db.collection('multiplayer').doc(),
+          data
+        );
+      }
+
+      // Commit the batch
+      await batch.commit();
+      print('Multiplayer collection initialized successfully');
+
+    } catch (e) {
+      print('Error initializing multiplayer collection: $e');
+      throw e;
+    }
+  }
 }
