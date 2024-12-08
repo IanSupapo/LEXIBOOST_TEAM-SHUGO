@@ -62,49 +62,60 @@ class _MyGamerState extends State<MyGamer> {
           .doc(widget.roomId)
           .get();
 
-      final gameState = gameDoc.data()?['gameState'];
-      if (gameState != null && gameState['questions'] != null) {
-        // Use existing questions
-        questions = List<Map<String, dynamic>>.from(gameState['questions']);
-      } else {
-        // Fetch new questions if none exist
-        final snapshot = await _firestore
-            .collection('multiplayer')
-            .where('level', isEqualTo: 1)
-            .get();
+      final gameData = gameDoc.data();
+      if (gameData != null) {
+        final gameState = gameData['gameState'] as Map<String, dynamic>?;
+        
+        if (gameState != null && gameState['questions'] != null) {
+          // Use existing questions
+          questions = List<Map<String, dynamic>>.from(gameState['questions'] as List);
+        } else {
+          // Fetch new questions if none exist
+          final snapshot = await _firestore
+              .collection('level1')  // Changed from multiplayer to level1
+              .get();
 
-        final allQuestions = snapshot.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .where((data) => data['question'] != null && data['answer'] != null)
-            .toList();
+          final allQuestions = snapshot.docs
+              .map((doc) => doc.data())
+              .toList();
 
-        allQuestions.shuffle(Random());
-        questions = allQuestions.take(3).toList();
+          allQuestions.shuffle(Random());
+          questions = allQuestions.take(3).toList();
 
-        // Cache the questions
-        await _firestore.collection('game_rooms').doc(widget.roomId).update({
-          'gameState.questions': questions,
-          'gameState.lastUpdated': FieldValue.serverTimestamp(),
-        });
-      }
+          // Cache the questions
+          await _firestore.collection('game_rooms').doc(widget.roomId).update({
+            'gameState': {
+              'questions': questions,
+              'playerProgress': {
+                widget.playerId: {
+                  'score': 0,
+                  'currentQuestion': 0,
+                }
+              },
+              'lastUpdated': FieldValue.serverTimestamp(),
+            }
+          });
+        }
 
-      // Initialize player progress if not exists
-      if (!gameState?['playerProgress']?[widget.playerId]?['currentQuestion']) {
-        await _firestore.collection('game_rooms').doc(widget.roomId).update({
-          'gameState.playerProgress.${widget.playerId}': {
-            'score': 0,
-            'currentQuestion': 0,
-          },
-        });
-      }
+        // Initialize player progress if not exists
+        final playerProgress = gameState?['playerProgress'] as Map<String, dynamic>?;
+        if (playerProgress == null || !playerProgress.containsKey(widget.playerId)) {
+          await _firestore.collection('game_rooms').doc(widget.roomId).update({
+            'gameState.playerProgress.${widget.playerId}': {
+              'score': 0,
+              'currentQuestion': 0,
+            }
+          });
+        }
 
-      trophyReward = Random().nextInt(6) + 15;
+        trophyReward = Random().nextInt(6) + 15;
 
-      if (_mounted) {
-        setState(() {
-          _isLoadingQuestions = false;
-          currentQuestionIndex = gameState?['playerProgress']?[widget.playerId]?['currentQuestion'] ?? 0;
-        });
+        if (_mounted) {
+          setState(() {
+            _isLoadingQuestions = false;
+            currentQuestionIndex = (playerProgress?[widget.playerId]?['currentQuestion'] as int?) ?? 0;
+          });
+        }
       }
     } catch (e) {
       print('Error initializing game: $e');
