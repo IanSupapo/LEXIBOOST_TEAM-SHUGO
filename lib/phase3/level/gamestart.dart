@@ -24,7 +24,7 @@ class _MyGamerState extends State<MyGamer> {
   final user = FirebaseAuth.instance.currentUser;
   
   int currentRound = 1;
-  int maxRounds = 5;
+  int maxRounds = 3;
   bool isGameComplete = false;
   String? winner;
   int trophyReward = 0;
@@ -51,34 +51,22 @@ class _MyGamerState extends State<MyGamer> {
 
   Future<void> _initializeGame() async {
     try {
-      // Fetch questions in parallel using Future.wait
-      final futures = await Future.wait([
-        _firestore.collection('level1')
-            .get(),
-        _firestore.collection('level2')
-            .get(),
-      ]);
+      // Only fetch from level1
+      final snapshot = await _firestore
+          .collection('level1')
+          .get();
 
-      // Get all questions and shuffle them
-      final level1Questions = futures[0].docs
+      final allQuestions = snapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .where((data) => data['question'] != null && data['answer'] != null)
           .toList();
 
-      final level2Questions = futures[1].docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .where((data) => data['question'] != null && data['answer'] != null)
-          .toList();
-
-      // Combine and shuffle all questions
-      final allQuestions = [...level1Questions, ...level2Questions];
+      // Shuffle and take 3 questions
       allQuestions.shuffle(Random());
-      
-      // Take first 5 questions
-      questions = allQuestions.take(5).toList();
+      questions = allQuestions.take(3).toList();
       trophyReward = Random().nextInt(6) + 15;
 
-      // Cache the questions in the game room document
+      // Cache the questions
       await _firestore.collection('game_rooms').doc(widget.roomId).update({
         'gameState.questions': questions,
       });
