@@ -10,6 +10,7 @@ import 'package:animated_button/animated_button.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'package:shugo/Reusable%20Widget/reusable_widget.dart';
 
 class MyProfile extends StatefulWidget {
   const MyProfile({super.key});
@@ -21,7 +22,8 @@ class MyProfile extends StatefulWidget {
 class _MyProfileState extends State<MyProfile> {
   final _fullNameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String? _imageUrl;
+  String? _profileImageUrl;
+  String? _backgroundImageUrl;
   bool _isUploadingImage = false;
 
   Future<void> _uploadImage({bool isBackground = false}) async {
@@ -31,7 +33,12 @@ class _MyProfileState extends State<MyProfile> {
 
     try {
       final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 50,
+      );
       
       if (image == null) {
         setState(() {
@@ -40,30 +47,31 @@ class _MyProfileState extends State<MyProfile> {
         return;
       }
 
-      // Read image bytes and convert to base64
       final bytes = await image.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final base64String = base64Encode(bytes);
 
-      // Update Firestore with base64 string
+      final cleanBase64 = base64String.replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '');
+
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .update({
-          isBackground ? 'backgroundImage' : 'image': base64Image,
+          isBackground ? 'backgroundImage' : 'image': cleanBase64,
         });
 
         setState(() {
-          if (!isBackground) {
-            _imageUrl = base64Image;
+          if (isBackground) {
+            _backgroundImageUrl = cleanBase64;
+          } else {
+            _profileImageUrl = cleanBase64;
           }
         });
       }
 
     } catch (e) {
       print('Error picking/uploading image: $e');
-      // Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error uploading image: $e')),
@@ -81,12 +89,12 @@ class _MyProfileState extends State<MyProfile> {
     _descriptionController.text = userData['description'] ?? '';
     if (userData['image'] != null) {
       setState(() {
-        _imageUrl = userData['image'];
+        _profileImageUrl = userData['image'];
       });
     }
     if (userData['backgroundImage'] != null) {
       setState(() {
-        _imageUrl = userData['backgroundImage'];
+        _backgroundImageUrl = userData['backgroundImage'];
       });
     }
   }
@@ -97,6 +105,21 @@ class _MyProfileState extends State<MyProfile> {
 
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
+      appBar: AppBar(
+        title: const Text(
+          'Profile',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
       body: currentUser == null
           ? const Center(
               child: Text(
@@ -132,13 +155,16 @@ class _MyProfileState extends State<MyProfile> {
                       children: [
                         Container(
                           width: double.infinity,
-                          height: 300,
+                          height: 200,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            image: (userData?['backgroundImage'] != null || _imageUrl != null)
+                            image: (userData?['backgroundImage'] != null || _backgroundImageUrl != null)
                                 ? DecorationImage(
                                     image: MemoryImage(
-                                      base64Decode(_imageUrl ?? storedImage!),
+                                      base64Decode(
+                                        (_backgroundImageUrl ?? userData?['backgroundImage'] ?? '')
+                                            .replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '')
+                                      ),
                                     ),
                                     fit: BoxFit.cover,
                                   )
@@ -158,10 +184,13 @@ class _MyProfileState extends State<MyProfile> {
                                       color: Colors.black,
                                       width: 4.0,
                                     ),
-                                    image: (storedImage != null || _imageUrl != null)
+                                    image: (userData?['image'] != null || _profileImageUrl != null)
                                         ? DecorationImage(
                                             image: MemoryImage(
-                                              base64Decode(_imageUrl ?? storedImage!),
+                                              base64Decode(
+                                                (_profileImageUrl ?? userData?['image'] ?? '')
+                                                    .replaceAll(RegExp(r'[^A-Za-z0-9+/=]'), '')
+                                              ),
                                             ),
                                             fit: BoxFit.cover,
                                           )
@@ -265,6 +294,14 @@ class _MyProfileState extends State<MyProfile> {
                                         color: Color.fromARGB(195, 255, 255, 255),
                                       ),
                                     ),
+                                    const SizedBox(height: 20),
+                                    Container(
+                                      width: MediaQuery.of(context).size.width * 0.8,
+                                      child: const Divider(
+                                        color: Colors.white,
+                                        thickness: 1,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               );
@@ -300,7 +337,7 @@ class _MyProfileState extends State<MyProfile> {
                                 elevation: 16,
                                 child: Container(
                                   width: MediaQuery.of(context).size.width * 0.6,
-                                  height: MediaQuery.of(context).size.height * 0.5,
+                                  height: MediaQuery.of(context).size.height * 0.9,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(25.0),
@@ -312,53 +349,117 @@ class _MyProfileState extends State<MyProfile> {
                                       ),
                                     ],
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      children: [
-                                        const Text(
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 20.0),
+                                        child: Text(
                                           'Edit Profile',
                                           style: TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
+                                            fontFamily: 'Poppins',
                                           ),
                                         ),
-                                        const SizedBox(height: 16),
-                                        TextField(
-                                          controller: _fullNameController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Full Name',
-                                            border: OutlineInputBorder(),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Expanded(
+                                        child: RawScrollbar(
+                                          thumbColor: Colors.blue.withOpacity(0.6),
+                                          radius: const Radius.circular(20),
+                                          thickness: 5,
+                                          child: SingleChildScrollView(
+                                            physics: const BouncingScrollPhysics(),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16.0,
+                                              vertical: 10.0,
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                reusableWidget(
+                                                  textController: _fullNameController,
+                                                  labelText: "Full Name",
+                                                  context: context,
+                                                  isPassword: false,
+                                                  labelColor: Colors.blue,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                reusableWidget(
+                                                  textController: _descriptionController,
+                                                  labelText: "Description",
+                                                  context: context,
+                                                  isPassword: false,
+                                                  labelColor: Colors.blue,
+                                                  isDescription: true,
+                                                ),
+                                                const SizedBox(height: 20),
+                                                AnimatedButton(
+                                                  onPressed: _isUploadingImage 
+                                                      ? () {} 
+                                                      : () => _uploadImage(isBackground: false),
+                                                  height: MediaQuery.of(context).size.height * 0.08,
+                                                  width: MediaQuery.of(context).size.width * 0.6,
+                                                  color: Colors.blue.shade400,
+                                                  child: _isUploadingImage 
+                                                      ? const SizedBox(
+                                                          height: 20,
+                                                          width: 20,
+                                                          child: CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        )
+                                                      : const Center(
+                                                          child: Text(
+                                                            'Profile Image',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                              fontFamily: 'Poppins',
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+                                                const SizedBox(height: 20),
+                                                AnimatedButton(
+                                                  onPressed: _isUploadingImage 
+                                                      ? () {} 
+                                                      : () => _uploadImage(isBackground: true),
+                                                  height: MediaQuery.of(context).size.height * 0.08,
+                                                  width: MediaQuery.of(context).size.width * 0.6,
+                                                  color: Colors.blue.shade400,
+                                                  child: _isUploadingImage 
+                                                      ? const SizedBox(
+                                                          height: 20,
+                                                          width: 20,
+                                                          child: CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        )
+                                                      : const Center(
+                                                          child: Text(
+                                                            'Background Image',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                              fontFamily: 'Poppins',
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(height: 16),
-                                        TextField(
-                                          controller: _descriptionController,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Description',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        ElevatedButton(
-                                          onPressed: _isUploadingImage 
-                                              ? null 
-                                              : () => _uploadImage(isBackground: false),
-                                          child: _isUploadingImage 
-                                              ? const CircularProgressIndicator() 
-                                              : const Text('Upload Profile Image'),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        ElevatedButton(
-                                          onPressed: _isUploadingImage 
-                                              ? null 
-                                              : () => _uploadImage(isBackground: true),
-                                          child: _isUploadingImage 
-                                              ? const CircularProgressIndicator() 
-                                              : const Text('Upload Background Image'),
-                                        ),
-                                        const Spacer(),
-                                        ElevatedButton(
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: AnimatedButton(
                                           onPressed: () async {
                                             try {
                                               final firestore = FirebaseFirestore.instance;
@@ -367,11 +468,11 @@ class _MyProfileState extends State<MyProfile> {
                                                 'description': _descriptionController.text,
                                               };
                                               
-                                              if (_imageUrl != null) {
-                                                updates['image'] = _imageUrl!;
+                                              if (_profileImageUrl != null) {
+                                                updates['image'] = _profileImageUrl!;
                                               }
-                                              if (_imageUrl != null) {
-                                                updates['backgroundImage'] = _imageUrl!;
+                                              if (_backgroundImageUrl != null) {
+                                                updates['backgroundImage'] = _backgroundImageUrl!;
                                               }
 
                                               await firestore
@@ -387,10 +488,24 @@ class _MyProfileState extends State<MyProfile> {
                                               print('Error updating profile: $e');
                                             }
                                           },
-                                          child: const Text('Save Changes'),
+                                          height: MediaQuery.of(context).size.height * 0.08,
+                                          width: MediaQuery.of(context).size.width * 0.6,
+                                          color: Colors.green,
+                                          child: const Center(
+                                            child: Text(
+                                              'Save Changes',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );

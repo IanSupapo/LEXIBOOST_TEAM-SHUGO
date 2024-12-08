@@ -10,7 +10,7 @@ class MyTerms extends StatefulWidget {
 class _MyTermsState extends State<MyTerms> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: const Color(0xFF0486C7),
       body: SafeArea(
         child: SingleChildScrollView(

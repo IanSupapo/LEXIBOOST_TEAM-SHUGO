@@ -19,6 +19,36 @@ class _MySoloState extends State<MySolo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
+      appBar: AppBar(
+        title: const Text(
+          'Solo Mode',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        leadingWidth: 80,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 10.0),
+          child: AnimatedButton(
+            height: 40,
+            width: 40,
+            color: Colors.transparent,
+            onPressed: () {
+              Navigator.pushNamed(context, '/home');
+            },
+            child: Image.asset(
+              'assets/back.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
           // PageView for sliding between containers
@@ -72,25 +102,6 @@ class _MySoloState extends State<MySolo> {
           ),
 
           // Back button - adjusted position
-          Positioned(
-            top: 40,
-            left: 10,
-            child: AnimatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/home');
-              },
-              height: 70,
-              width: 120,
-              color: Colors.transparent,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Image.asset(
-                  'assets/back.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
 
           // Left arrow button (rotated)
           Positioned(

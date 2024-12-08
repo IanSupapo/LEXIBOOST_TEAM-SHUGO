@@ -38,4 +38,33 @@ class FirestoreServices {
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
+
+  Future<String> createGameRoom(String userId) async {
+    try {
+      final roomRef = await _db.collection('game_rooms').add({
+        'hostId': userId,
+        'players': [userId],
+        'status': 'waiting',
+        'createdAt': FieldValue.serverTimestamp(),
+        'gameType': 'versus',
+      });
+      return roomRef.id;
+    } catch (e) {
+      print('Error creating game room: $e');
+      throw e;
+    }
+  }
+
+  Future<void> joinGameRoom(String roomId, String userId) async {
+    try {
+      await _db.collection('game_rooms').doc(roomId)
+          .update({
+        'players': FieldValue.arrayUnion([userId]),
+        'status': 'ready',
+      });
+    } catch (e) {
+      print('Error joining game room: $e');
+      throw e;
+    }
+  }
 }

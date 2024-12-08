@@ -19,6 +19,7 @@ import 'package:shugo/phase2/mail.dart';
 import 'package:shugo/phase2/profile.dart';
 import 'package:shugo/phase2/rank.dart';
 import 'package:shugo/phase2/settings.dart';
+import 'package:shugo/phase3/level/gamestart.dart';
 import 'package:shugo/phase3/level/play1.dart';
 import 'package:shugo/phase3/level/play2.dart';
 import 'package:shugo/phase3/level/play3.dart';
@@ -93,9 +94,6 @@ class MyApp extends StatelessWidget {
         '/account' : (context) => const MyAccount(),
         '/privacy' : (context) => const MyPrivacy(),
         '/terms' : (context) => const MyTerms(),
-
-
-
       },
     );
   }

@@ -9,6 +9,7 @@ Widget reusableWidget({
   bool showEyeIcon = true,
   VoidCallback? onVisibilityToggle,
   Color labelColor = Colors.white,
+  bool isDescription = false,
 }) {
   final screenWidth = MediaQuery.of(context).size.width;
   final screenHeight = MediaQuery.of(context).size.height;
@@ -39,7 +40,7 @@ Widget reusableWidget({
       const SizedBox(height: 5),
       Container(
         width: screenWidth * 0.6,
-        height: screenHeight * 0.05,
+        height: isDescription ? screenHeight * 0.2 : screenHeight * 0.05,
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: Colors.black, width: 1),
@@ -48,22 +49,23 @@ Widget reusableWidget({
         child: TextField(
           controller: textController,
           obscureText: isPassword ? isPasswordObscured : false,
-          keyboardType: _getKeyboardType(labelText),
-          autocorrect: !_isSpecialField(labelText),
-          enableSuggestions: !_isSpecialField(labelText),
-          textAlign: TextAlign.left,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: inputTextSize,
-            fontFamily: 'Poppins',
-            letterSpacing: _getLetterSpacing(labelText, screenWidth),
-          ),
+          keyboardType: isDescription ? TextInputType.multiline : _getKeyboardType(labelText),
+          maxLines: isDescription ? null : 1,
+          maxLength: isDescription ? 120 : null,
+          expands: isDescription,
+          textAlignVertical: isDescription ? TextAlignVertical.top : TextAlignVertical.center,
           decoration: InputDecoration(
             contentPadding: EdgeInsets.symmetric(
               vertical: verticalPadding,
               horizontal: horizontalPadding,
             ),
             border: InputBorder.none,
+            counterText: '',
+            hintText: isDescription ? 'Enter description (max 120 words)...' : null,
+            hintStyle: TextStyle(
+              fontFamily: 'Poppins',
+              color: Colors.grey,
+            ),
             suffixIcon: isPassword && showEyeIcon
                 ? IconButton(
                     icon: Icon(
@@ -76,6 +78,21 @@ Widget reusableWidget({
                     onPressed: onVisibilityToggle,
                   )
                 : null,
+          ),
+          onChanged: isDescription ? (text) {
+            final words = text.split(' ');
+            if (words.length > 120) {
+              textController.text = words.take(120).join(' ');
+              textController.selection = TextSelection.fromPosition(
+                TextPosition(offset: textController.text.length),
+              );
+            }
+          } : null,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: inputTextSize,
+            fontFamily: 'Poppins',
+            letterSpacing: _getLetterSpacing(labelText, screenWidth),
           ),
         ),
       ),
