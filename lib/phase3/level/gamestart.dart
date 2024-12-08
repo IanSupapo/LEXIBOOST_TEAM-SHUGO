@@ -1,3 +1,4 @@
+import 'package:animated_button/animated_button.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,44 +34,58 @@ class _MyGamerState extends State<MyGamer> {
   int currentQuestionIndex = 0;
   String currentAnswer = '';
   bool isCorrect = false;
-  
-  late Stream<DocumentSnapshot> gameStream;
 
   @override
   void initState() {
     super.initState();
-    gameStream = FirebaseFirestore.instance
-        .collection('game_rooms')
-        .doc(widget.roomId)
-        .snapshots();
     _initializeGame();
   }
 
   Future<void> _initializeGame() async {
-    // Fetch random questions from all levels
-    final allQuestions = await _fetchQuestionsFromAllLevels();
+    // Fetch questions from both level1 and level2
+    final level1Questions = await _fetchLevel1Questions();
+    final level2Questions = await _fetchLevel2Questions();
+    
+    // Combine questions from both levels
+    final allQuestions = [...level1Questions, ...level2Questions];
     questions = _selectRandomQuestions(allQuestions, maxRounds);
-    trophyReward = Random().nextInt(6) + 15; // Random between 15-20
+    trophyReward = Random().nextInt(6) + 15;
     setState(() {});
   }
 
-  Future<List<Map<String, dynamic>>> _fetchQuestionsFromAllLevels() async {
-    List<Map<String, dynamic>> allQuestions = [];
-    
-    // Fetch from all levels
-    for (int level = 1; level <= 3; level++) {
+  Future<List<Map<String, dynamic>>> _fetchLevel1Questions() async {
+    try {
       final QuerySnapshot snapshot = await _firestore
-          .collection('level$level')
+          .collection('level1')
           .get();
           
-      final questions = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
-      allQuestions.addAll(questions);
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      print('Error fetching level 1 questions: $e');
+      return [];
     }
-    
-    return allQuestions;
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchLevel2Questions() async {
+    try {
+      final QuerySnapshot snapshot = await _firestore
+          .collection('level2')
+          .get();
+          
+      return snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+    } catch (e) {
+      print('Error fetching level 2 questions: $e');
+      return [];
+    }
   }
 
   List<Map<String, dynamic>> _selectRandomQuestions(List<Map<String, dynamic>> questions, int count) {
+    if (questions.isEmpty) return [];
+    
     final random = Random();
     questions.shuffle(random);
     return questions.take(count).toList();
@@ -83,9 +98,22 @@ class _MyGamerState extends State<MyGamer> {
     final correctAnswer = question['answer'].toString().toLowerCase();
     final userAnswer = _answerController.text.trim().toLowerCase();
 
-    if (userAnswer == correctAnswer) {
+    setState(() {
+      isCorrect = userAnswer == correctAnswer;
+    });
+
+    if (isCorrect) {
+      // Show correct answer feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Correct!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
+
       // Update progress in Firestore
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('game_rooms')
           .doc(widget.roomId)
           .update({
@@ -95,49 +123,59 @@ class _MyGamerState extends State<MyGamer> {
             FieldValue.increment(1),
       });
 
-      _answerController.clear();
+      setState(() {
+        currentQuestionIndex++;
+        currentRound++;
+        _answerController.clear();
 
-      // Check if player won
-      final doc = await FirebaseFirestore.instance
+        if (currentRound > maxRounds) {
+          _endGame();
+        }
+      });
+    } else {
+      // Show incorrect answer feedback
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Incorrect! The answer is: $correctAnswer'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      _answerController.clear();
+    }
+  }
+
+  Future<void> _endGame() async {
+    try {
+      final roomDoc = await _firestore
           .collection('game_rooms')
           .doc(widget.roomId)
           .get();
-      
-      final gameState = doc.data()?['gameState'];
-      if (gameState != null) {
-        final myProgress = gameState['playerProgress'][widget.playerId];
-        if (myProgress['currentQuestion'] >= 8) {
-          // Player won - update game state and award trophies
-          await FirebaseFirestore.instance
-              .collection('game_rooms')
-              .doc(widget.roomId)
-              .update({
-            'gameState.winner': widget.playerId,
-            'gameState.isComplete': true,
-          });
 
-          if (user != null) {
-            final userDoc = await _firestore.collection('users').doc(user!.uid).get();
-            final currentTrophies = userDoc.data()?['trophy'] ?? 0;
-            await _firestore.collection('users').doc(user!.uid).update({
-              'trophy': currentTrophies + gameState['trophyReward'],
-            });
-          }
+      final gameState = roomDoc.data()?['gameState'];
+      if (gameState != null) {
+        // Award trophies to winner
+        if (user != null) {
+          final userDoc = await _firestore.collection('users').doc(user!.uid).get();
+          final currentTrophies = userDoc.data()?['trophy'] ?? 0;
+          
+          await _firestore.collection('users').doc(user!.uid).update({
+            'trophy': currentTrophies + trophyReward,
+          });
         }
+
+        setState(() {
+          isGameComplete = true;
+          winner = widget.playerId;
+        });
       }
+    } catch (e) {
+      print('Error ending game: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (questions.isEmpty) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.blue.shade400,
       appBar: AppBar(
@@ -155,84 +193,129 @@ class _MyGamerState extends State<MyGamer> {
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: gameStream,
+        stream: _firestore.collection('game_rooms').doc(widget.roomId).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const CircularProgressIndicator();
-          
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final gameData = snapshot.data!.data() as Map<String, dynamic>;
           final gameState = gameData['gameState'];
-          final myProgress = gameState['playerProgress'][widget.playerId];
-          final otherPlayer = gameState['playerProgress']
-              .keys
-              .firstWhere((id) => id != widget.playerId);
-          final otherProgress = gameState['playerProgress'][otherPlayer];
+          
+          if (gameState == null) {
+            return const Center(child: Text('Waiting for game to start...'));
+          }
 
-          return Column(
-            children: [
-              // Show both players' progress
-              _buildProgressIndicator(myProgress, otherProgress),
-              
-              // Show current question
-              if (!gameState['isComplete'])
-                _buildQuestionContainer(
-                  gameState['questions'][myProgress['currentQuestion']]
-                ),
-                
-              // Show game complete screen if there's a winner
-              if (gameState['winner'] != null)
-                _buildGameCompleteScreen(
-                  gameState['winner'] == widget.playerId,
-                  gameState['trophyReward']
-                ),
-            ],
-          );
-        }
+          if (isGameComplete) {
+            return _buildGameCompleteScreen();
+          }
+
+          if (currentQuestionIndex >= questions.length) {
+            return const Center(child: Text('Loading questions...'));
+          }
+
+          return _buildQuestionScreen(questions[currentQuestionIndex]);
+        },
       ),
     );
   }
 
-  Widget _buildQuestionContainer(Map<String, dynamic> question) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              question['question'],
+  Widget _buildQuestionScreen(Map<String, dynamic> question) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Progress indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text(
+              'Round $currentRound/$maxRounds',
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _answerController,
-              decoration: const InputDecoration(
-                hintText: 'Enter your answer',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _checkAnswer(),
+          ),
+          const SizedBox(height: 30),
+          // Question container
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _checkAnswer,
-              child: const Text('Submit'),
+            child: Column(
+              children: [
+                // Question text
+                Text(
+                  question['question'],
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                // Answer input
+                TextField(
+                  controller: _answerController,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your answer',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                  onSubmitted: (_) => _checkAnswer(),
+                ),
+                const SizedBox(height: 20),
+                // Submit button
+                AnimatedButton(
+                  onPressed: _checkAnswer,
+                  height: 50,
+                  width: 200,
+                  color: Colors.blue.shade400,
+                  child: const Text(
+                    'Submit',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildGameCompleteScreen(bool isWinner, int trophies) {
+  Widget _buildGameCompleteScreen() {
     return Center(
       child: Container(
         margin: const EdgeInsets.all(20),
@@ -244,28 +327,40 @@ class _MyGamerState extends State<MyGamer> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              isWinner ? 'You Won!' : 'Game Over',
-              style: const TextStyle(
+            const Text(
+              'Game Complete!',
+              style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
-            if (isWinner) Text(
-              'You won $trophies trophies!',
+            Text(
+              'You won $trophyReward trophies!',
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 20,
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
+            AnimatedButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.of(context).popUntil(
+                  (route) => route.isFirst || route.settings.name == '/versus'
+                );
               },
-              child: const Text('Return to Menu'),
+              height: 50,
+              width: 200,
+              color: Colors.blue,
+              child: const Text(
+                'Return to Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                ),
+              ),
             ),
           ],
         ),
@@ -273,40 +368,9 @@ class _MyGamerState extends State<MyGamer> {
     );
   }
 
-  Widget _buildProgressIndicator(Map<String, dynamic> myProgress, Map<String, dynamic> otherProgress) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildPlayerProgress('You', myProgress['currentQuestion']),
-          _buildPlayerProgress('Opponent', otherProgress['currentQuestion']),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlayerProgress(String player, int questionsDone) {
-    return Column(
-      children: [
-        Text(
-          player,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 18,
-            color: Colors.white,
-          ),
-        ),
-        Text(
-          '$questionsDone/8',
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    );
+  @override
+  void dispose() {
+    _answerController.dispose();
+    super.dispose();
   }
 }
