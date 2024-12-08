@@ -38,6 +38,7 @@ class _MyGamerState extends State<MyGamer> {
   // Add these variables
   late Stream<DocumentSnapshot> _gameStream;
   bool _isLoadingQuestions = true;
+  bool _mounted = true;
   
   @override
   void initState() {
@@ -50,8 +51,9 @@ class _MyGamerState extends State<MyGamer> {
   }
 
   Future<void> _initializeGame() async {
+    if (!mounted) return;
+    
     try {
-      // Only fetch from level1
       final snapshot = await _firestore
           .collection('level1')
           .get();
@@ -61,7 +63,6 @@ class _MyGamerState extends State<MyGamer> {
           .where((data) => data['question'] != null && data['answer'] != null)
           .toList();
 
-      // Shuffle and take 3 questions
       allQuestions.shuffle(Random());
       questions = allQuestions.take(3).toList();
       trophyReward = Random().nextInt(6) + 15;
@@ -71,27 +72,31 @@ class _MyGamerState extends State<MyGamer> {
         'gameState.questions': questions,
       });
 
-      setState(() {
-        _isLoadingQuestions = false;
-      });
+      if (_mounted) {
+        setState(() {
+          _isLoadingQuestions = false;
+        });
+      }
     } catch (e) {
       print('Error initializing game: $e');
     }
   }
 
   Future<void> _checkAnswer() async {
+    if (!mounted) return;
     if (currentQuestionIndex >= questions.length) return;
     
     final question = questions[currentQuestionIndex];
     final correctAnswer = question['answer'].toString().toLowerCase();
     final userAnswer = _answerController.text.trim().toLowerCase();
 
+    if (!mounted) return;
     setState(() {
       isCorrect = userAnswer == correctAnswer;
     });
 
     if (isCorrect) {
-      // Show correct answer feedback
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Correct!'),
@@ -111,6 +116,7 @@ class _MyGamerState extends State<MyGamer> {
             FieldValue.increment(1),
       });
 
+      if (!mounted) return;
       setState(() {
         currentQuestionIndex++;
         currentRound++;
@@ -121,7 +127,7 @@ class _MyGamerState extends State<MyGamer> {
         }
       });
     } else {
-      // Show incorrect answer feedback
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Incorrect! The answer is: $correctAnswer'),
@@ -398,6 +404,7 @@ class _MyGamerState extends State<MyGamer> {
 
   @override
   void dispose() {
+    _mounted = false;
     _answerController.dispose();
     super.dispose();
   }
