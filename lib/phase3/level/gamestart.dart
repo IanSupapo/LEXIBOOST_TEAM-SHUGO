@@ -56,33 +56,63 @@ class _MyGamerState extends State<MyGamer> {
     if (!mounted) return;
     
     try {
-      // Fetch from multiplayer collection
-      final snapshot = await _firestore
-          .collection('multiplayer')
-          .where('level', isEqualTo: 1)  // Only get level 1 questions for now
+      // First check if questions are already in game state
+      final gameDoc = await _firestore
+          .collection('game_rooms')
+          .doc(widget.roomId)
           .get();
 
-      final allQuestions = snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .where((data) => data['question'] != null && data['answer'] != null)
-          .toList();
+      final gameState = gameDoc.data()?['gameState'];
+      if (gameState != null && gameState['questions'] != null) {
+        // Use existing questions
+        questions = List<Map<String, dynamic>>.from(gameState['questions']);
+      } else {
+        // Fetch new questions if none exist
+        final snapshot = await _firestore
+            .collection('multiplayer')
+            .where('level', isEqualTo: 1)
+            .get();
 
-      allQuestions.shuffle(Random());
-      questions = allQuestions.take(3).toList();
+        final allQuestions = snapshot.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .where((data) => data['question'] != null && data['answer'] != null)
+            .toList();
+
+        allQuestions.shuffle(Random());
+        questions = allQuestions.take(3).toList();
+
+        // Cache the questions
+        await _firestore.collection('game_rooms').doc(widget.roomId).update({
+          'gameState.questions': questions,
+          'gameState.lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Initialize player progress if not exists
+      if (!gameState?['playerProgress']?[widget.playerId]?['currentQuestion']) {
+        await _firestore.collection('game_rooms').doc(widget.roomId).update({
+          'gameState.playerProgress.${widget.playerId}': {
+            'score': 0,
+            'currentQuestion': 0,
+          },
+        });
+      }
+
       trophyReward = Random().nextInt(6) + 15;
 
-      // Cache the questions
-      await _firestore.collection('game_rooms').doc(widget.roomId).update({
-        'gameState.questions': questions,
-      });
-
+      if (_mounted) {
+        setState(() {
+          _isLoadingQuestions = false;
+          currentQuestionIndex = gameState?['playerProgress']?[widget.playerId]?['currentQuestion'] ?? 0;
+        });
+      }
+    } catch (e) {
+      print('Error initializing game: $e');
       if (_mounted) {
         setState(() {
           _isLoadingQuestions = false;
         });
       }
-    } catch (e) {
-      print('Error initializing game: $e');
     }
   }
 
@@ -232,14 +262,14 @@ class _MyGamerState extends State<MyGamer> {
           final gameState = gameData['gameState'];
 
           if (_isLoadingQuestions) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(
+                  CircularProgressIndicator(
                     color: Colors.white,
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
                   Text(
                     'Loading questions...',
                     style: TextStyle(
@@ -253,16 +283,21 @@ class _MyGamerState extends State<MyGamer> {
             );
           }
 
-          if (gameState == null) {
-            return const Center(child: Text('Waiting for game to start...'));
-          }
-
-          if (isGameComplete) {
-            return _buildGameCompleteScreen();
+          if (gameState == null || questions.isEmpty) {
+            return const Center(
+              child: Text(
+                'Error loading game state',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                  color: Colors.white,
+                ),
+              ),
+            );
           }
 
           if (currentQuestionIndex >= questions.length) {
-            return const Center(child: Text('Loading questions...'));
+            return _buildGameCompleteScreen();
           }
 
           return _buildQuestionScreen(questions[currentQuestionIndex]);
