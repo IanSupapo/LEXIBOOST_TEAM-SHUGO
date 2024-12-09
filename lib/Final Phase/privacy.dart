@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:flutter/material.dart';
-import 'package:shugo/phase2/settings.dart';
-import 'package:animated_button/animated_button.dart';
 
 class MyPrivacy extends StatefulWidget {
   const MyPrivacy({super.key});

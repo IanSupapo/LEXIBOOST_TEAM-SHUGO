@@ -23,16 +23,14 @@ import 'package:shugo/phase2/profile.dart';
 import 'package:shugo/phase2/rank.dart';
 import 'package:shugo/phase2/settings.dart';
 import 'package:shugo/phase3/level/gameselect.dart';
-import 'package:shugo/phase3/level/gamestart.dart';
+
 import 'package:shugo/phase3/level/play1.dart';
 import 'package:shugo/phase3/level/play2.dart';
 import 'package:shugo/phase3/level/play3.dart';
 import 'package:shugo/phase3/solo.dart';
 import 'package:shugo/phase3/versus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shugo/services/Firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

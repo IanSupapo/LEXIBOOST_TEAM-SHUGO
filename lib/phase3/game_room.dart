@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shugo/phase3/level/gamestart.dart';
-import 'package:shugo/services/Firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 
@@ -16,7 +15,6 @@ class GameRoom extends StatefulWidget {
 }
 
 class _GameRoomState extends State<GameRoom> {
-  final FirestoreServices _firestoreServices = FirestoreServices();
   final user = FirebaseAuth.instance.currentUser;
   
   Stream<DocumentSnapshot> get roomStream => FirebaseFirestore.instance

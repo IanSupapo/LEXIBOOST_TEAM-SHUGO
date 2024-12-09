@@ -133,8 +133,6 @@ class MyAchievement extends StatelessWidget {
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   final achievement = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-                  final achievementId = snapshot.data!.docs[index].id;
-                  final bool isClaimable = achievement['isClaimable'] ?? false;
                   final bool isCompleted = achievement['completedBy']?.contains(userId) ?? false;
 
                   return Container(
