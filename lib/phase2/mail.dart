@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class MyMail extends StatefulWidget {
-  const MyMail({super.key});
+  const MyMail({super.key, required List notifications});
 
   @override
   State<MyMail> createState() => _MyMailState();
