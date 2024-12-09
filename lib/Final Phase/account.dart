@@ -29,20 +29,35 @@ class _MyAccountState extends State<MyAccount> {
   final TextEditingController _schoolNameController = TextEditingController();
   bool _isPasswordObscured = true;
 
-  // Add validation function
+  Stream<bool> _getTeacherConfirmationStatus() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(false);
+    
+    return FirebaseFirestore.instance
+        .collection('teacher_confirmations')
+        .where('userId', isEqualTo: user.uid)
+        .where('status', isEqualTo: 'approved')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.isNotEmpty);
+  }
+
+  // Modify the validateFields() method
   void validateFields() {
+    // Create a list to store names of empty required fields
     List<String> emptyFields = [];
     
-    if (_schoolNameController.text.isEmpty) {
+    // Check each required field
+    if (_schoolNameController.text.trim().isEmpty) {
       emptyFields.add('School Name');
     }
-    if (_teacherIdController.text.isEmpty) {
+    if (_teacherIdController.text.trim().isEmpty) {
       emptyFields.add('Teacher ID Number');
     }
-    if (_addresseeController.text.isEmpty) {
+    if (_addresseeController.text.trim().isEmpty) {
       emptyFields.add('Address');
     }
 
+    // If any required fields are empty, show error dialog
     if (emptyFields.isNotEmpty) {
       showDialog(
         context: context,
@@ -56,17 +71,38 @@ class _MyAccountState extends State<MyAccount> {
                 color: Colors.red,
               ),
             ),
-            content: Text(
-              'Please fill in the following fields:\n\n${emptyFields.join('\n')}',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-              ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Please fill in the following required fields:',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...emptyFields.map((field) => Padding(
+                  padding: const EdgeInsets.only(left: 10),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        field,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+              ],
             ),
             actions: [
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
+                onPressed: () => Navigator.of(context).pop(),
                 child: const Text(
                   'OK',
                   style: TextStyle(
@@ -80,10 +116,64 @@ class _MyAccountState extends State<MyAccount> {
           );
         },
       );
-    } else {
-      // All required fields are filled
-      print('All fields valid, sending data...');
-      // Add your send functionality here
+      return;
+    }
+
+    // If all required fields are filled, proceed with saving to Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+      );
+
+      FirebaseFirestore.instance.collection('teachers').add({
+        'address': _addresseeController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'email': user.email,
+        'fullName': user.displayName ?? '',
+        'schoolName': _schoolNameController.text.trim(),
+        'status': 'active',
+        'teacherId': _teacherIdController.text.trim(),
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': user.uid,
+      }).then((_) {
+        // Remove loading indicator
+        Navigator.pop(context);
+        // Close the registration modal
+        Navigator.pop(context);
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Teacher registration successful!',
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }).catchError((error) {
+        // Remove loading indicator
+        Navigator.pop(context);
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error: $error',
+              style: const TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      });
     }
   }
 
@@ -248,192 +338,322 @@ class _MyAccountState extends State<MyAccount> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      AnimatedButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Dialog(
-                                backgroundColor: Colors.transparent,
-                                child: SingleChildScrollView(
-                                  child: Container(
-                                    width: MediaQuery.of(context).size.width * 0.9,
-                                    height: MediaQuery.of(context).size.height * 0.9,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(35),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 20),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: const Text(
-                                              "Teacher Registration",
-                                              style: TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                      StreamBuilder<bool>(
+                        stream: _getTeacherConfirmationStatus(),
+                        builder: (context, snapshot) {
+                          final isApproved = snapshot.data ?? false;
+                          
+                          return AnimatedButton(
+                            onPressed: isApproved ? () {
+                              // Existing teacher registration dialog code
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    child: SingleChildScrollView(
+                                      child: Container(
+                                        width: MediaQuery.of(context).size.width * 0.9,
+                                        height: MediaQuery.of(context).size.height * 0.9,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(35),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 20),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: const Text(
+                                                  "Teacher Registration",
+                                                  style: TextStyle(
+                                                    fontFamily: 'Poppins',
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Container(
-                                            padding: const EdgeInsets.all(20),
-                                            child: Column(
-                                              children: [
-                                                reusableWidget(
-                                                  textController: _schoolNameController,
-                                                  labelText: "School Name",
-                                                  context: context,
-                                                  isPassword: false,
-                                                  labelColor: Colors.blue,
-                                                ),
-                                                const SizedBox(height: 20),
-                                                reusableWidget(
-                                                  textController: _teacherIdController,
-                                                  labelText: "Teacher ID Number",
-                                                  context: context,
-                                                  isPassword: false,
-                                                  labelColor: Colors.blue,
-                                                ),
-                                                const SizedBox(height: 20),
-                                                reusableWidget(
-                                                  textController: _addresseeController,
-                                                  labelText: "Address",
-                                                  context: context,
-                                                  isPassword: false,
-                                                  labelColor: Colors.blue,
-                                                ),
-                                                const SizedBox(height: 20),
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                            Expanded(
+                                              child: Container(
+                                                padding: const EdgeInsets.all(20),
+                                                child: Column(
                                                   children: [
-                                                    const Text(
-                                                      "Description",
-                                                      style: TextStyle(
-                                                        fontFamily: 'Poppins',
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: Colors.blue,
-                                                      ),
-                                                      textAlign: TextAlign.center,
-                                                    ),
-                                                    const SizedBox(height: 10),
-                                                    Container(
-                                                      width: MediaQuery.of(context).size.width * 0.6,
-                                                      height: MediaQuery.of(context).size.height * 0.2,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white,
-                                                        border: Border.all(color: Colors.black),
-                                                        borderRadius: BorderRadius.circular(15),
-                                                      ),
-                                                      child: TextField(
-                                                        controller: _descriptionController,
-                                                        maxLines: null,
-                                                        expands: true,
-                                                        maxLength: 120,
-                                                        textAlignVertical: TextAlignVertical.top,
-                                                        decoration: const InputDecoration(
-                                                          contentPadding: EdgeInsets.all(15),
-                                                          border: InputBorder.none,
-                                                          hintText: 'Enter description (max 120 words)...',
-                                                          hintStyle: TextStyle(
-                                                            fontFamily: 'Poppins',
-                                                            color: Colors.grey,
-                                                          ),
-                                                          counterText: '',
-                                                        ),
-                                                        style: const TextStyle(
-                                                          fontFamily: 'Poppins',
-                                                          color: Colors.black,
-                                                        ),
-                                                        onChanged: (text) {
-                                                          final words = text.split(' ');
-                                                          if (words.length > 120) {
-                                                            _descriptionController.text = words.take(120).join(' ');
-                                                            _descriptionController.selection = TextSelection.fromPosition(
-                                                              TextPosition(offset: _descriptionController.text.length),
-                                                            );
-                                                          }
-                                                        },
-                                                      ),
+                                                    reusableWidget(
+                                                      textController: _schoolNameController,
+                                                      labelText: "School Name",
+                                                      context: context,
+                                                      isPassword: false,
+                                                      labelColor: Colors.blue,
                                                     ),
                                                     const SizedBox(height: 20),
-                                                    AnimatedButton(
-                                                      onPressed: validateFields,
-                                                      height: MediaQuery.of(context).size.height * 0.07,
-                                                      width: MediaQuery.of(context).size.width * 0.5,
-                                                      color: Colors.green,
-                                                      child: const Center(
-                                                        child: Text(
-                                                          'Send',
+                                                    reusableWidget(
+                                                      textController: _teacherIdController,
+                                                      labelText: "Teacher ID Number",
+                                                      context: context,
+                                                      isPassword: false,
+                                                      labelColor: Colors.blue,
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    reusableWidget(
+                                                      textController: _addresseeController,
+                                                      labelText: "Address",
+                                                      context: context,
+                                                      isPassword: false,
+                                                      labelColor: Colors.blue,
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                      children: [
+                                                        const Text(
+                                                          "Description",
                                                           style: TextStyle(
                                                             fontFamily: 'Poppins',
-                                                            fontSize: 18,
+                                                            fontSize: 16,
                                                             fontWeight: FontWeight.bold,
+                                                            color: Colors.blue,
+                                                          ),
+                                                          textAlign: TextAlign.center,
+                                                        ),
+                                                        const SizedBox(height: 10),
+                                                        Container(
+                                                          width: MediaQuery.of(context).size.width * 0.6,
+                                                          height: MediaQuery.of(context).size.height * 0.2,
+                                                          decoration: BoxDecoration(
                                                             color: Colors.white,
+                                                            border: Border.all(color: Colors.black),
+                                                            borderRadius: BorderRadius.circular(15),
+                                                          ),
+                                                          child: TextField(
+                                                            controller: _descriptionController,
+                                                            maxLines: null,
+                                                            expands: true,
+                                                            maxLength: 120,
+                                                            textAlignVertical: TextAlignVertical.top,
+                                                            decoration: const InputDecoration(
+                                                              contentPadding: EdgeInsets.all(15),
+                                                              border: InputBorder.none,
+                                                              hintText: 'Enter description (max 120 words)...',
+                                                              hintStyle: TextStyle(
+                                                                fontFamily: 'Poppins',
+                                                                color: Colors.grey,
+                                                              ),
+                                                              counterText: '',
+                                                            ),
+                                                            style: const TextStyle(
+                                                              fontFamily: 'Poppins',
+                                                              color: Colors.black,
+                                                            ),
+                                                            onChanged: (text) {
+                                                              final words = text.split(' ');
+                                                              if (words.length > 120) {
+                                                                _descriptionController.text = words.take(120).join(' ');
+                                                                _descriptionController.selection = TextSelection.fromPosition(
+                                                                  TextPosition(offset: _descriptionController.text.length),
+                                                                );
+                                                              }
+                                                            },
                                                           ),
                                                         ),
-                                                      ),
+                                                        const SizedBox(height: 20),
+                                                        AnimatedButton(
+                                                          onPressed: validateFields,
+                                                          height: MediaQuery.of(context).size.height * 0.07,
+                                                          width: MediaQuery.of(context).size.width * 0.5,
+                                                          color: Colors.green,
+                                                          child: const Center(
+                                                            child: Text(
+                                                              'Send',
+                                                              style: TextStyle(
+                                                                fontFamily: 'Poppins',
+                                                                fontSize: 18,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 20),
-                                          child: AnimatedButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            height: MediaQuery.of(context).size.height * 0.06,
-                                            width: MediaQuery.of(context).size.width * 0.3,
-                                            color: Colors.blue.shade400,
-                                            child: const Center(
-                                              child: Text(
-                                                'Close',
-                                                style: TextStyle(
-                                                  fontFamily: 'Poppins',
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 20),
+                                              child: AnimatedButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                height: MediaQuery.of(context).size.height * 0.06,
+                                                width: MediaQuery.of(context).size.width * 0.3,
+                                                color: Colors.blue.shade400,
+                                                child: const Center(
+                                                  child: Text(
+                                                    'Close',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Poppins',
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            } : () {
+                              // Show message that admin approval is needed
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.school, // Teacher/Education icon
+                                          color: Colors.green,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Text(
+                                          'Teacher Registration',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.message_outlined, // Message icon
+                                          color: Colors.blue,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Expanded(
+                                          child: Text(
+                                            'Please request teacher access from the admin. They will review and approve your request.',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () async {
+                                          // Request teacher access
+                                          final user = FirebaseAuth.instance.currentUser;
+                                          if (user != null) {
+                                            await FirebaseFirestore.instance
+                                                .collection('teacher_confirmations')
+                                                .add({
+                                              'userId': user.uid,
+                                              'status': 'pending',
+                                              'timestamp': FieldValue.serverTimestamp(),
+                                            });
+                                            
+                                            if (mounted) {
+                                              Navigator.pop(context);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Teacher access request sent to admin'),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.send,
+                                              size: 16,
+                                              color: Colors.blue,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Request Access',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.close,
+                                              size: 16,
+                                              color: Colors.red,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Close',
+                                              style: TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             },
+                            height: MediaQuery.of(context).size.height * 0.07,
+                            width: MediaQuery.of(context).size.width * 0.65,
+                            color: Colors.green,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  "I'm a Teacher",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (!isApproved) const SizedBox(width: 10),
+                                if (!isApproved)
+                                  const Icon(
+                                    Icons.lock,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                              ],
+                            ),
                           );
                         },
-                        height: MediaQuery.of(context).size.height * 0.07,
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        color: Colors.green,
-                        child: const Center(
-                          child: Text(
-                            "I'm a Teacher",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 20),
                       Container(

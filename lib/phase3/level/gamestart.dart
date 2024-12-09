@@ -42,6 +42,27 @@ class _MyGamerState extends State<MyGamer> {
   bool _isLoadingQuestions = true;
   bool _mounted = true;
   
+  List<String> scrambledWords = [];
+  List<String> correctWords = [];
+  
+  String scrambleWord(String word) {
+    List<String> letters = word.split('');
+    letters.shuffle();
+    // Make sure the scrambled word is different from the original
+    while (letters.join() == word && word.length > 1) {
+      letters.shuffle();
+    }
+    return letters.join();
+  }
+
+  List<String> getFixedScrambledWords() {
+    return [
+      'suptooc',  // octopus
+      'gnorad',   // dragon
+      'htrome',   // mother
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +77,6 @@ class _MyGamerState extends State<MyGamer> {
     if (!mounted) return;
     
     try {
-      // First check if questions are already in game state
       final gameDoc = await _firestore
           .collection('game_rooms')
           .doc(widget.roomId)
@@ -67,29 +87,20 @@ class _MyGamerState extends State<MyGamer> {
         final gameState = gameData['gameState'] as Map<String, dynamic>?;
         
         if (gameState != null && gameState['questions'] != null) {
-          // Use existing questions
           questions = List<Map<String, dynamic>>.from(gameState['questions'] as List);
+          correctWords = ['octopus', 'dragon', 'mother'];
+          scrambledWords = getFixedScrambledWords();
         } else {
-          // Fetch new questions if none exist
-          final snapshot = await _firestore
-              .collection('level1')  // Changed from multiplayer to level1
-              .get();
+          // Use our predefined words
+          correctWords = ['octopus', 'dragon', 'mother'];
+          scrambledWords = getFixedScrambledWords();
+          
+          questions = correctWords.map((word) => {
+            'word': word,
+            'scrambled': scrambledWords[correctWords.indexOf(word)],
+          }).toList();
 
-          final allQuestions = snapshot.docs
-              .map((doc) => doc.data())
-              .where((data) => 
-                data != null && 
-                data['question'] != null && 
-                data['question'].toString().isNotEmpty &&
-                data['answer'] != null &&
-                data['answer'].toString().isNotEmpty
-              )
-              .toList();
-
-          allQuestions.shuffle(Random());
-          questions = allQuestions.take(3).toList();
-
-          // Cache the questions
+          // Initialize game state for both players
           await _firestore.collection('game_rooms').doc(widget.roomId).update({
             'gameState': {
               'questions': questions,
@@ -97,9 +108,16 @@ class _MyGamerState extends State<MyGamer> {
                 widget.playerId: {
                   'score': 0,
                   'currentQuestion': 0,
+                },
+                // Initialize other player's progress if they haven't joined yet
+                'player2': {
+                  'score': 0,
+                  'currentQuestion': 0,
                 }
               },
               'lastUpdated': FieldValue.serverTimestamp(),
+              'winner': null,
+              'isComplete': false,
             }
           });
         }
@@ -114,8 +132,6 @@ class _MyGamerState extends State<MyGamer> {
             }
           });
         }
-
-        trophyReward = Random().nextInt(6) + 15;
 
         if (_mounted) {
           setState(() {
@@ -136,51 +152,50 @@ class _MyGamerState extends State<MyGamer> {
 
   Future<void> _checkAnswer() async {
     if (!mounted) return;
-    if (currentQuestionIndex >= questions.length) return;
+    if (currentQuestionIndex >= correctWords.length) return;
     
-    final question = questions[currentQuestionIndex];
-    final correctAnswer = question['answer']?.toString().toLowerCase() ?? '';
+    final correctWord = correctWords[currentQuestionIndex];
     final userAnswer = _answerController.text.trim().toLowerCase();
 
-    if (correctAnswer.isEmpty) {
-      print('Error: No answer found for question');
-      return;
-    }
-
     setState(() {
-      isCorrect = userAnswer == correctAnswer;
+      isCorrect = userAnswer == correctWord.toLowerCase();
       showAnswer = true;
       buttonColor = isCorrect ? Colors.green : Colors.red;
     });
 
     if (isCorrect) {
-      // Show correct answer feedback
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Correct!',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-            ),
-          ),
+          content: Text('Correct!'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 1),
         ),
       );
 
-      // Update progress in Firestore
-      await _firestore
-          .collection('game_rooms')
-          .doc(widget.roomId)
-          .update({
+      // Update player progress
+      await _firestore.collection('game_rooms').doc(widget.roomId).update({
         'gameState.playerProgress.${widget.playerId}.currentQuestion': 
             FieldValue.increment(1),
         'gameState.playerProgress.${widget.playerId}.score': 
             FieldValue.increment(1),
       });
 
-      // Wait for animation
+      // Get updated game state to check if player completed all rounds
+      final gameDoc = await _firestore
+          .collection('game_rooms')
+          .doc(widget.roomId)
+          .get();
+      
+      final gameState = gameDoc.data()?['gameState'];
+      final playerProgress = gameState?['playerProgress']?[widget.playerId];
+      final currentScore = playerProgress?['score'] ?? 0;
+
+      // Check if player has completed all 5 rounds
+      if (currentScore >= maxRounds) {
+        await _endGame();
+        return;
+      }
+
       await Future.delayed(const Duration(seconds: 1));
 
       if (!mounted) return;
@@ -190,17 +205,12 @@ class _MyGamerState extends State<MyGamer> {
         _answerController.clear();
         showAnswer = false;
         buttonColor = Colors.blue.shade400;
-
-        if (currentRound > maxRounds) {
-          _endGame();
-        }
       });
     } else {
-      // Show incorrect answer feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Incorrect! The answer is: $correctAnswer',
+            'Incorrect! Try again.',
             style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 16,
@@ -211,7 +221,6 @@ class _MyGamerState extends State<MyGamer> {
         ),
       );
 
-      // Wait for animation
       await Future.delayed(const Duration(seconds: 2));
 
       if (!mounted) return;
@@ -225,27 +234,47 @@ class _MyGamerState extends State<MyGamer> {
 
   Future<void> _endGame() async {
     try {
+      // Get the current game state
       final roomDoc = await _firestore
           .collection('game_rooms')
           .doc(widget.roomId)
           .get();
 
       final gameState = roomDoc.data()?['gameState'];
-      if (gameState != null) {
-        // Award trophies to winner
+      
+      // Only proceed if there's no winner yet
+      if (gameState != null && gameState['winner'] == null) {
+        // Mark the game as complete and set the winner
+        await _firestore.collection('game_rooms').doc(widget.roomId).update({
+          'gameState.winner': widget.playerId,
+          'gameState.isComplete': true,
+        });
+
+        // Award trophies to the winner
         if (user != null) {
+          final trophyReward = Random().nextInt(6) + 15; // 15-20 trophies
+          
+          // Get current trophies
           final userDoc = await _firestore.collection('users').doc(user!.uid).get();
           final currentTrophies = userDoc.data()?['trophy'] ?? 0;
           
+          // Update trophies in Firestore
           await _firestore.collection('users').doc(user!.uid).update({
             'trophy': currentTrophies + trophyReward,
           });
-        }
 
-        setState(() {
-          isGameComplete = true;
-          winner = widget.playerId;
-        });
+          // Also update the game room with the trophy information
+          await _firestore.collection('game_rooms').doc(widget.roomId).update({
+            'gameState.trophyAwarded': trophyReward,
+            'gameState.winnerUid': user!.uid,
+          });
+
+          setState(() {
+            this.trophyReward = trophyReward;
+            isGameComplete = true;
+            winner = widget.playerId;
+          });
+        }
       }
     } catch (e) {
       print('Error ending game: $e');
@@ -270,6 +299,7 @@ class _MyGamerState extends State<MyGamer> {
         elevation: 0,
         centerTitle: true,
       ),
+      resizeToAvoidBottomInset: true,
       body: StreamBuilder<DocumentSnapshot>(
         stream: _gameStream,
         builder: (context, snapshot) {
@@ -283,6 +313,17 @@ class _MyGamerState extends State<MyGamer> {
 
           final gameData = snapshot.data!.data() as Map<String, dynamic>;
           final gameState = gameData['gameState'];
+
+          // Check if game is complete
+          if (gameState['isComplete'] == true) {
+            final gameWinner = gameState['winner'];
+            if (gameWinner != null) {
+              // Show game complete screen for both players
+              return _buildGameCompleteScreen(
+                isWinner: gameWinner == widget.playerId
+              );
+            }
+          }
 
           if (_isLoadingQuestions) {
             return const Center(
@@ -318,9 +359,8 @@ class _MyGamerState extends State<MyGamer> {
               ),
             );
           }
-
           if (currentQuestionIndex >= questions.length) {
-            return _buildGameCompleteScreen();
+            return _buildGameCompleteScreen(isWinner: false);
           }
 
           return _buildQuestionScreen(questions[currentQuestionIndex]);
@@ -330,151 +370,261 @@ class _MyGamerState extends State<MyGamer> {
   }
 
   Widget _buildQuestionScreen(Map<String, dynamic> question) {
-    final questionText = question['question']?.toString() ?? 'Loading question...';
+    final scrambledWord = scrambledWords[currentQuestionIndex];
     
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Progress indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Text(
-              'Round $currentRound/$maxRounds',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+    return Scrollbar(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Add players' progress here
+              StreamBuilder<DocumentSnapshot>(
+                stream: _gameStream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  final gameData = snapshot.data!.data() as Map<String, dynamic>;
+                  return _buildPlayersProgress(gameData['gameState']);
+                },
               ),
-            ),
-          ),
-          const SizedBox(height: 30),
-          // Question container
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Question text
-                Text(
-                  questionText,
+                child: Text(
+                  'Round $currentRound/$maxRounds',
                   style: const TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 30),
-                // Answer input
-                TextField(
-                  controller: _answerController,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your answer',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
+              ),
+              const SizedBox(height: 30),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
                     ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                  ),
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                  onSubmitted: (_) => _checkAnswer(),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                // Submit button
-                AnimatedButton(
-                  onPressed: _checkAnswer,
-                  height: 50,
-                  width: 200,
-                  color: buttonColor,
-                  child: Text(
-                    showAnswer ? (isCorrect ? 'Correct!' : 'Wrong!') : 'Submit',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Poppins',
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Fix the spelling:",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        scrambledWord,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: 250,
+                      child: TextField(
+                        controller: _answerController,
+                        decoration: InputDecoration(
+                          hintText: 'Enter the correct spelling',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                        ),
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                        ),
+                        textAlign: TextAlign.center,
+                        onSubmitted: (_) => _checkAnswer(),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    AnimatedButton(
+                      onPressed: _checkAnswer,
+                      height: 50,
+                      width: 200,
+                      color: buttonColor,
+                      child: Text(
+                        showAnswer ? (isCorrect ? 'Correct!' : 'Wrong!') : 'Submit',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildGameCompleteScreen() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Game Complete!',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+  Widget _buildGameCompleteScreen({required bool isWinner}) {
+    return Scrollbar(
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'You won $trophyReward trophies!',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(height: 20),
-            AnimatedButton(
-              onPressed: () {
-                Navigator.of(context).popUntil(
-                  (route) => route.isFirst || route.settings.name == '/versus'
-                );
-              },
-              height: 50,
-              width: 200,
-              color: Colors.blue,
-              child: const Text(
-                'Return to Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Poppins',
-                  fontSize: 18,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Finish!',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _gameStream,
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Text(
+                        'Loading results...',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                        ),
+                      );
+                    }
+
+                    final gameData = snapshot.data!.data() as Map<String, dynamic>;
+                    final gameState = gameData['gameState'];
+                    final trophyAwarded = gameState['trophyAwarded'] as int?;
+
+                    return Text(
+                      isWinner 
+                        ? 'Congratulations! You won ${trophyAwarded ?? 0} trophies!'
+                        : 'Game Over! Your opponent won.',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 20,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                AnimatedButton(
+                  onPressed: () {
+                    Navigator.of(context).popUntil(
+                      (route) => route.isFirst || route.settings.name == '/versus'
+                    );
+                  },
+                  height: 50,
+                  width: 200,
+                  color: Colors.blue,
+                  child: const Text(
+                    'Return to Menu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlayersProgress(Map<String, dynamic> gameState) {
+    final playerProgress = gameState['playerProgress'] as Map<String, dynamic>;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Column(
+        children: playerProgress.entries.map((entry) {
+          final isCurrentPlayer = entry.key == widget.playerId;
+          final progress = entry.value as Map<String, dynamic>;
+          final currentQuestion = progress['currentQuestion'] as int;
+          
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.person,
+                  color: isCurrentPlayer ? Colors.blue : Colors.grey,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  isCurrentPlayer ? 'You' : 'Opponent',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: isCurrentPlayer ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'Question ${currentQuestion + 1}/5',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

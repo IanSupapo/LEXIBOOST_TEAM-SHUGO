@@ -13,6 +13,10 @@ class MyDashboard extends StatefulWidget {
 class _MyDashboardState extends State<MyDashboard> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _schoolNameController = TextEditingController();
+  final TextEditingController _teacherIdController = TextEditingController();
+  final TextEditingController _addresseeController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   void _signOut() async {
     await _auth.signOut();
@@ -404,6 +408,161 @@ class _MyDashboardState extends State<MyDashboard> {
     );
   }
 
+  void _handleTeacherRegistration(String userId, Map<String, dynamic> userData) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: SingleChildScrollView(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(35),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "Teacher Registration",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _schoolNameController,
+                          decoration: const InputDecoration(
+                            labelText: "School Name",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        TextField(
+                          controller: _teacherIdController,
+                          decoration: const InputDecoration(
+                            labelText: "Teacher ID Number",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        TextField(
+                          controller: _addresseeController,
+                          decoration: const InputDecoration(
+                            labelText: "Address",
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        TextField(
+                          controller: _descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: "Description",
+                            border: OutlineInputBorder(),
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (_schoolNameController.text.isEmpty ||
+                                _teacherIdController.text.isEmpty ||
+                                _addresseeController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Please fill all required fields'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            try {
+                              // Create new document in teachers collection
+                              await _firestore.collection('teachers').add({
+                                'address': _addresseeController.text,
+                                'description': _descriptionController.text,
+                                'email': userData['email'],
+                                'fullName': userData['fullname'],
+                                'schoolName': _schoolNameController.text,
+                                'status': 'active',
+                                'teacherId': _teacherIdController.text,
+                                'timestamp': FieldValue.serverTimestamp(),
+                                'userId': userId,
+                              });
+
+                              if (mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Teacher registration successful!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 15,
+                            ),
+                          ),
+                          child: const Text(
+                            'Send',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _schoolNameController.dispose();
+    _teacherIdController.dispose();
+    _addresseeController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -460,20 +619,6 @@ class _MyDashboardState extends State<MyDashboard> {
                     ),
                 ],
               );
-            },
-          ),
-          // Message Icon
-          IconButton(
-            icon: const Icon(Icons.message, color: Colors.white),
-            onPressed: () {
-              // Add message functionality
-            },
-          ),
-          // Settings Icon
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              // Add settings functionality
             },
           ),
           // Logout Icon
@@ -541,39 +686,242 @@ class _MyDashboardState extends State<MyDashboard> {
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundColor: Color(0xFF0486C7),
-                              child: Icon(Icons.person, color: Colors.white),
-                            ),
-                            title: Text(
-                              userData['fullname'] ?? 'N/A',
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  userData['email'] ?? 'N/A',
-                                  style: const TextStyle(fontFamily: 'Poppins'),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const CircleAvatar(
+                                  backgroundColor: Color(0xFF0486C7),
+                                  child: Icon(Icons.person, color: Colors.white),
                                 ),
-                                Text(
-                                  'Points: ${playerInfo['points'] ?? '0'} | Trophy: ${playerInfo['trophy'] ?? '0'}',
-                                  style: const TextStyle(fontFamily: 'Poppins'),
+                                title: Text(
+                                  userData['fullname'] ?? 'N/A',
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ],
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.message),
-                              color: const Color(0xFF0486C7),
-                              onPressed: () => _showMessageDialog(
-                                users[index].id,
-                                userData['fullname'] ?? 'Unknown User',
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      userData['email'] ?? 'N/A',
+                                      style: const TextStyle(fontFamily: 'Poppins'),
+                                    ),
+                                    Text(
+                                      'Points: ${playerInfo['points'] ?? '0'} | Trophy: ${playerInfo['trophy'] ?? '0'}',
+                                      style: const TextStyle(fontFamily: 'Poppins'),
+                                    ),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Teacher Request Icon
+                                    StreamBuilder<QuerySnapshot>(
+                                      stream: _firestore
+                                          .collection('teacher_confirmations')
+                                          .where('userId', isEqualTo: users[index].id)
+                                          .snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) return const SizedBox.shrink();
+
+                                        final requests = snapshot.data!.docs;
+                                        if (requests.isEmpty) return const SizedBox.shrink();
+
+                                        final latestRequest = requests.first.data() as Map<String, dynamic>;
+                                        final status = latestRequest['status'];
+
+                                        return IconButton(
+                                          icon: Icon(
+                                            status == 'approved' 
+                                                ? Icons.school 
+                                                : Icons.school_outlined,
+                                            color: status == 'approved'
+                                                ? Colors.green
+                                                : status == 'pending'
+                                                    ? Colors.orange
+                                                    : Colors.grey,
+                                          ),
+                                          onPressed: () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: Text(
+                                                    status == 'approved'
+                                                        ? 'Teacher Status'
+                                                        : 'Teacher Request',
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'User: ${userData['fullname']}',
+                                                        style: const TextStyle(fontFamily: 'Poppins'),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        'Status: ${status.toString().toUpperCase()}',
+                                                        style: TextStyle(
+                                                          fontFamily: 'Poppins',
+                                                          color: status == 'approved'
+                                                              ? Colors.green
+                                                              : status == 'pending'
+                                                                  ? Colors.orange
+                                                                  : Colors.grey,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    if (status == 'pending') ...[
+                                                      TextButton(
+                                                        onPressed: () async {
+                                                          await _firestore
+                                                              .collection('teacher_confirmations')
+                                                              .doc(requests.first.id)
+                                                              .update({'status': 'approved'});
+                                                          Navigator.pop(context);
+                                                          _handleTeacherRegistration(users[index].id, userData);
+                                                        },
+                                                        child: const Text(
+                                                          'Approve',
+                                                          style: TextStyle(
+                                                            color: Colors.green,
+                                                            fontFamily: 'Poppins',
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () async {
+                                                          await _firestore
+                                                              .collection('teacher_confirmations')
+                                                              .doc(requests.first.id)
+                                                              .update({'status': 'rejected'});
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: const Text(
+                                                          'Reject',
+                                                          style: TextStyle(
+                                                            color: Colors.red,
+                                                            fontFamily: 'Poppins',
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context),
+                                                      child: const Text(
+                                                        'Close',
+                                                        style: TextStyle(
+                                                          fontFamily: 'Poppins',
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    // Message Icon
+                                    IconButton(
+                                      icon: const Icon(Icons.message),
+                                      color: const Color(0xFF0486C7),
+                                      onPressed: () => _showMessageDialog(
+                                        users[index].id,
+                                        userData['fullname'] ?? 'Unknown User',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                              // Add StreamBuilder for teacher information
+                              StreamBuilder<QuerySnapshot>(
+                                stream: _firestore
+                                    .collection('teachers')
+                                    .where('userId', isEqualTo: users[index].id)
+                                    .limit(1)
+                                    .snapshots(),
+                                builder: (context, teacherSnapshot) {
+                                  if (!teacherSnapshot.hasData || teacherSnapshot.data!.docs.isEmpty) {
+                                    return const SizedBox.shrink(); // Return empty widget if no teacher data
+                                  }
+
+                                  final teacherData = teacherSnapshot.data!.docs.first.data() as Map<String, dynamic>;
+                                  
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade50,
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(4),
+                                        bottomRight: Radius.circular(4),
+                                      ),
+                                    ),
+                                    child: ListTile(
+                                      leading: const CircleAvatar(
+                                        backgroundColor: Colors.green,
+                                        child: Icon(Icons.school, color: Colors.white, size: 20),
+                                      ),
+                                      title: Text(
+                                        'Teacher at ${teacherData['schoolName'] ?? 'N/A'}',
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'ID: ${teacherData['teacherId'] ?? 'N/A'}',
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Address: ${teacherData['address'] ?? 'N/A'}',
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      trailing: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          'Teacher',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'Poppins',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         );
                       },

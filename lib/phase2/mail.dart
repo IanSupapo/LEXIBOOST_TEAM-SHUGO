@@ -3,452 +3,330 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-class MyMail extends StatelessWidget {
-  final List<String> notifications;
+class MyMail extends StatefulWidget {
+  const MyMail({super.key});
 
-  const MyMail({super.key, required this.notifications});
+  @override
+  State<MyMail> createState() => _MyMailState();
+}
 
-  Future<void> _updateMessageStatus(String messageId, bool isRead) async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) return;
+class _MyMailState extends State<MyMail> {
+  final TextEditingController _messageController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final currentUser = FirebaseAuth.instance.currentUser;
+  
+  // Track the selected conversation
+  String? selectedUserId;
+  String? selectedUserName;
 
-      await FirebaseFirestore.instance
-          .collection('mail')
-          .doc(messageId)
-          .update({
-            'isRead': isRead,
-          });
-    } catch (e) {
-      print('Error updating message status: $e');
-      // Silently fail - don't affect user experience
-    }
-  }
-
-  Future<void> _showMessageDialog(BuildContext context, Map<String, dynamic> messageData, String messageId) async {
-    try {
-      final timestamp = messageData['timestamp'] as Timestamp?;
-      final formattedDate = timestamp != null
-          ? DateFormat('MMM dd, yyyy HH:mm').format(timestamp.toDate())
-          : 'No date';
-
-      // Try to update read status but don't wait for it
-      _updateMessageStatus(messageId, true);
-
-      await showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (BuildContext dialogContext) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.9,
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8,
-                maxWidth: 500,
-              ),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Message from Admin',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.of(dialogContext).pop(),
-                          ),
-                        ],
-                      ),
-                      const Divider(),
-                      const SizedBox(height: 10),
-                      Container(
-                        constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.5,
-                        ),
-                        child: SingleChildScrollView(
-                          child: Text(
-                            messageData['message']?.toString() ?? 'No message content',
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                            ),
-                            textAlign: TextAlign.left,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Sent on: $formattedDate',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      if (messageData['recipientId'] != null) // Only show buttons if recipient exists
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.delete, color: Colors.white),
-                              label: const Text(
-                                'Delete',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () async {
-                                try {
-                                  await FirebaseFirestore.instance
-                                      .collection('mail')
-                                      .doc(messageId)
-                                      .delete();
-                                  
-                                  if (dialogContext.mounted) {
-                                    Navigator.of(dialogContext).pop();
-                                  }
-                                  
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Message deleted'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  }
-                                } catch (error) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Error deleting message: $error'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.chat, color: Colors.white),
-                              label: const Text(
-                                'Reply',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  color: Colors.white,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () {
-                                String? senderId = messageData['senderId'] as String?;
-                                Navigator.of(dialogContext).pop();
-                                _showReplyDialog(context, senderId);
-                              },
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      print('Error showing message dialog: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error displaying message'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showReplyDialog(BuildContext context, String? senderId) {
-    final TextEditingController replyController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(
-          'Reply to Admin',
-          style: TextStyle(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.blue.shade400,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          selectedUserName ?? 'Messages',
+          style: const TextStyle(
             fontFamily: 'Poppins',
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Container(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: replyController,
-                decoration: const InputDecoration(
-                  hintText: 'Type your reply...',
-                  border: OutlineInputBorder(),
+        leading: selectedUserId != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  setState(() {
+                    selectedUserId = null;
+                    selectedUserName = null;
+                  });
+                },
+              )
+            : null,
+      ),
+      body: selectedUserId == null
+          ? _buildConversationsList()
+          : _buildChatScreen(),
+    );
+  }
+
+  Widget _buildConversationsList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('messages')
+          .where('participants', arrayContains: currentUser!.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
+        }
+
+        final conversations = snapshot.data?.docs ?? [];
+        
+        if (conversations.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.message, size: 64, color: Colors.white),
+                SizedBox(height: 16),
+                Text(
+                  "No Messages Yet",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                maxLines: 3,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: conversations.length,
+          itemBuilder: (context, index) {
+            final conversation = conversations[index].data() as Map<String, dynamic>;
+            final otherUserId = (conversation['participants'] as List)
+                .firstWhere((id) => id != currentUser!.uid);
+
+            return FutureBuilder<DocumentSnapshot>(
+              future: _firestore.collection('users').doc(otherUserId).get(),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+
+                final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                final userName = userData['fullname'] ?? 'Unknown User';
+                final lastMessage = conversation['lastMessage'] as String?;
+                final lastMessageTime = conversation['lastMessageTime'] as Timestamp?;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue.shade200,
+                      child: Text(
+                        userName.substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      userName,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: lastMessage != null
+                        ? Text(
+                            lastMessage,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontFamily: 'Poppins'),
+                          )
+                        : null,
+                    trailing: lastMessageTime != null
+                        ? Text(
+                            DateFormat('HH:mm').format(lastMessageTime.toDate()),
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              color: Colors.grey,
+                            ),
+                          )
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        selectedUserId = otherUserId;
+                        selectedUserName = userName;
+                      });
+                    },
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildChatScreen() {
+    return Column(
+      children: [
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _firestore
+                .collection('messages')
+                .doc(_getChatId())
+                .collection('chats')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final messages = snapshot.data?.docs ?? [];
+
+              return ListView.builder(
+                reverse: true,
+                padding: const EdgeInsets.all(16),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index].data() as Map<String, dynamic>;
+                  final isMe = message['senderId'] == currentUser!.uid;
+                  final timestamp = message['timestamp'] as Timestamp;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment:
+                          isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.7,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isMe ? Colors.blue.shade700 : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message['text'],
+                                style: TextStyle(
+                                  color: isMe ? Colors.white : Colors.black,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                              Text(
+                                DateFormat('HH:mm').format(timestamp.toDate()),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isMe
+                                      ? Colors.white.withOpacity(0.7)
+                                      : Colors.grey,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(8),
+          color: Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                  ),
+                  style: const TextStyle(fontFamily: 'Poppins'),
+                  maxLines: null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              CircleAvatar(
+                backgroundColor: Colors.blue,
+                child: IconButton(
+                  icon: const Icon(Icons.send, color: Colors.white),
+                  onPressed: _sendMessage,
                 ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (replyController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a message'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              try {
-                final currentUser = FirebaseAuth.instance.currentUser;
-                if (currentUser == null) {
-                  throw 'User not authenticated';
-                }
-
-                // Get admin document ID
-                final adminDoc = await FirebaseFirestore.instance
-                    .collection('Admin')
-                    .doc('Admin123')
-                    .get();
-
-                if (!adminDoc.exists) {
-                  throw 'Admin not found';
-                }
-
-                // Create new message
-                await FirebaseFirestore.instance.collection('mail').add({
-                  'message': replyController.text,
-                  'recipientId': 'Admin123', // Send to admin
-                  'senderId': currentUser.uid,
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'isRead': false,
-                });
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Reply sent successfully'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              } catch (e) {
-                print('Error sending reply: $e');
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error sending reply: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0486C7),
-            ),
-            child: const Text(
-              'Send',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 
+  String _getChatId() {
+    final List<String> ids = [currentUser!.uid, selectedUserId!]..sort();
+    return ids.join('_');
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    final chatId = _getChatId();
+    final message = _messageController.text.trim();
+    final timestamp = FieldValue.serverTimestamp();
+
+    try {
+      // Add message to subcollection
+      await _firestore
+          .collection('messages')
+          .doc(chatId)
+          .collection('chats')
+          .add({
+        'text': message,
+        'senderId': currentUser!.uid,
+        'timestamp': timestamp,
+      });
+
+      // Update or create the main conversation document
+      await _firestore.collection('messages').doc(chatId).set({
+        'participants': [currentUser!.uid, selectedUserId],
+        'lastMessage': message,
+        'lastMessageTime': timestamp,
+      });
+
+      _messageController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sending message: $e')),
+      );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      backgroundColor: Colors.blue.shade400,
-      appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
-        title: const Text(
-          "Mail",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        automaticallyImplyLeading: false,
-      ),
-      body: currentUser == null
-          ? const Center(
-              child: Text(
-                "Please sign in to view messages",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('mail')
-                  .where('recipientId', isEqualTo: currentUser.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      "Error: ${snapshot.error}",
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final messages = snapshot.data?.docs ?? [];
-
-                if (messages.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      "No new messages",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
-                        color: Colors.white,
-                      ),
-                    ),
-                  );
-                }
-
-                messages.sort((a, b) {
-                  final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                  final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                  if (aTime == null || bTime == null) return 0;
-                  return bTime.compareTo(aTime);
-                });
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final messageData = messages[index].data() as Map<String, dynamic>;
-                    final messageId = messages[index].id;
-                    final isRead = messageData['isRead'] ?? false;
-                    final timestamp = messageData['timestamp'] as Timestamp?;
-                    final formattedDate = timestamp != null
-                        ? DateFormat('MMM dd, yyyy HH:mm').format(timestamp.toDate())
-                        : 'No date';
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      color: isRead ? Colors.white : Colors.blue.shade50,
-                      child: ListTile(
-                        leading: const Icon(
-                          Icons.mail,
-                          color: Colors.blueAccent,
-                          size: 28,
-                        ),
-                        title: Text(
-                          'Message from Admin',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Poppins',
-                            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                        subtitle: Text(
-                          formattedDate,
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                          ),
-                        ),
-                        trailing: isRead
-                            ? null
-                            : const Icon(
-                                Icons.fiber_new,
-                                color: Colors.blue,
-                              ),
-                        onTap: () async {
-                          try {
-                            await _showMessageDialog(context, messageData, messageId);
-                          } catch (error) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $error'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-    );
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 }
 
