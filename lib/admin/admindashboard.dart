@@ -48,16 +48,40 @@ class _MyDashboardState extends State<MyDashboard> {
           ElevatedButton(
             onPressed: () async {
               if (messageController.text.isNotEmpty) {
-                await _firestore.collection('mail').add({
-                  'message': messageController.text,
-                  'recipientId': userId,
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'isRead': false,
-                });
-                if (mounted) {
-                  Navigator.pop(context);
+                final chatId = ['Admin123', userId]..sort();
+                final timestamp = FieldValue.serverTimestamp();
+
+                try {
+                  // Add message to chats subcollection
+                  await _firestore
+                      .collection('messages')
+                      .doc(chatId.join('_'))
+                      .collection('chats')
+                      .add({
+                    'text': messageController.text,
+                    'senderId': 'Admin123',
+                    'timestamp': timestamp,
+                  });
+
+                  // Update or create the main conversation document
+                  await _firestore
+                      .collection('messages')
+                      .doc(chatId.join('_'))
+                      .set({
+                    'participants': ['Admin123', userId],
+                    'lastMessage': messageController.text,
+                    'lastMessageTime': timestamp,
+                  });
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Message sent successfully')),
+                    );
+                  }
+                } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Message sent successfully')),
+                    SnackBar(content: Text('Error sending message: $e')),
                   );
                 }
               }
@@ -98,9 +122,9 @@ class _MyDashboardState extends State<MyDashboard> {
                       // Messages Tab
                       StreamBuilder<QuerySnapshot>(
                         stream: _firestore
-                            .collection('mail')
-                            .where('recipientId', isEqualTo: 'Admin123')
-                            .where('senderId', isEqualTo: userId)
+                            .collection('messages')
+                            .doc(['Admin123', userId].join('_'))
+                            .collection('chats')
                             .orderBy('timestamp', descending: true)
                             .snapshots(),
                         builder: (context, snapshot) {
@@ -122,6 +146,7 @@ class _MyDashboardState extends State<MyDashboard> {
                                   ? DateFormat('MMM dd, yyyy HH:mm')
                                       .format(timestamp.toDate())
                                   : 'No date';
+                              final isFromAdmin = message['senderId'] == 'Admin123';
 
                               return Card(
                                 margin: const EdgeInsets.symmetric(
@@ -130,7 +155,7 @@ class _MyDashboardState extends State<MyDashboard> {
                                 ),
                                 child: ListTile(
                                   title: Text(
-                                    message['message'] ?? 'No content',
+                                    message['text'] ?? 'No content',
                                     style: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 14,
@@ -146,30 +171,24 @@ class _MyDashboardState extends State<MyDashboard> {
                                           fontSize: 12,
                                         ),
                                       ),
-                                      if (!message['isRead'])
-                                        const Text(
-                                          'New Message',
-                                          style: TextStyle(
-                                            color: Colors.blue,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
+                                      Text(
+                                        isFromAdmin ? 'Sent by you' : 'Sent by user',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          color: isFromAdmin ? Colors.blue : Colors.green,
+                                          fontWeight: FontWeight.bold,
                                         ),
+                                      ),
                                     ],
                                   ),
-                                  trailing: IconButton(
+                                  trailing: !isFromAdmin ? IconButton(
                                     icon: const Icon(Icons.reply),
                                     onPressed: () {
                                       Navigator.pop(context);
                                       _showMessageDialog(userId, userName);
                                     },
-                                  ),
-                                  onTap: () async {
-                                    await _firestore
-                                        .collection('mail')
-                                        .doc(messages[index].id)
-                                        .update({'isRead': true});
-                                  },
+                                  ) : null,
                                 ),
                               );
                             },

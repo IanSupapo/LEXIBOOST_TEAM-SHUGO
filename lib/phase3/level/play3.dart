@@ -27,15 +27,32 @@ class _MyPlay3State extends State<MyPlay3> {
   }
 
   Future<void> fetchQuestions() async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('level3')
-        .orderBy(FieldPath.documentId)
-        .get();
-    
-    setState(() {
-      questions = querySnapshot.docs.map((doc) => doc.data()).toList();
-      isLoading = false;
-    });
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('level3')
+          .orderBy(FieldPath.documentId)
+          .get();
+      
+      setState(() {
+        questions = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          print('Question ${doc.id} data:');
+          print('Options length: ${(data['options'] as List?)?.length}');
+          if (data['options'] != null) {
+            for (var i = 0; i < (data['options'] as List).length; i++) {
+              print('Option $i imageBase64 exists: ${(data['options'][i]['imageBase64'] != null)}');
+            }
+          }
+          return data;
+        }).toList();
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching questions: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -112,49 +129,35 @@ class _MyPlay3State extends State<MyPlay3> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Center(
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 20,
-                      crossAxisSpacing: 20,
-                      childAspectRatio: 1,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: List.generate(options.length, (index) {
-                        final option = options[index];
-                        if (option == null) return const SizedBox();
-                        
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedAnswer = option['id'];
-                            });
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(35),
-                              border: Border.all(
-                                color: selectedAnswer == option['id']
-                                    ? Colors.blue.shade700
-                                    : Colors.transparent,
-                                width: 3,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(30),
-                              child: option['imageBase64'] != null
-                                  ? Image.memory(
-                                      base64Decode(option['imageBase64']),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : const Icon(Icons.image_not_supported),
-                            ),
-                          ),
-                        );
-                      }),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.7,
+                      child: GridView.count(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 20,
+                        crossAxisSpacing: 20,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: List.generate(
+                          currentQuestionIndex == 2 ? 3 : 4, 
+                          (index) {
+                            final options = questions[currentQuestionIndex]['options'] as List;
+                            final option = index < options.length ? options[index] : null;
+                            
+                            if (currentQuestionIndex == 2 && index == 2) {
+                              return Align(
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  width: MediaQuery.of(context).size.width * 0.35,
+                                  child: _buildOptionContainer(option),
+                                ),
+                              );
+                            }
+                            
+                            return _buildOptionContainer(option);
+                          }
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -193,8 +196,11 @@ class _MyPlay3State extends State<MyPlay3> {
       showCorrectOverlay();
       
       if (currentQuestionIndex == questions.length - 1) {
-        Future.delayed(const Duration(milliseconds: 1200), () {
-          showCompletionModal();
+        // If it's the last question, claim achievement first then show completion modal
+        _claimAchievement().then((_) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            showCompletionDialog();
+          });
         });
       } else {
         Future.delayed(const Duration(milliseconds: 1200), () {
@@ -265,7 +271,7 @@ class _MyPlay3State extends State<MyPlay3> {
     });
   }
 
-  void showCompletionModal() {
+  void showCompletionDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -309,132 +315,6 @@ class _MyPlay3State extends State<MyPlay3> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('achievements')
-                      .doc('ac1C1EOZ61X9t6GMmVzw')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox();
-                    }
-                    
-                    final achievement = snapshot.data!;
-                    final completedBy = List<String>.from(achievement['completedBy'] ?? []);
-                    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                    
-                    if (!completedBy.contains(currentUserId)) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: Colors.green.shade300,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Achievement Unlocked!',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'The Beast',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Beat the boss level in solo adventure',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 14,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  final user = FirebaseAuth.instance.currentUser;
-                                  if (user != null) {
-                                    await FirebaseFirestore.instance
-                                        .collection('achievements')
-                                        .doc('ac1C1EOZ61X9t6GMmVzw')
-                                        .update({
-                                      'completedBy': FieldValue.arrayUnion([user.uid])
-                                    });
-
-                                    final playerDoc = FirebaseFirestore.instance
-                                        .collection('player')
-                                        .doc(user.uid);
-                                    
-                                    final playerSnapshot = await playerDoc.get();
-                                    final currentPoints = playerSnapshot.data()?['points'] ?? 0;
-                                    
-                                    await playerDoc.update({
-                                      'points': currentPoints + 300
-                                    });
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Achievement claimed! +300 points'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-
-                                    if (mounted) {
-                                      Navigator.pushReplacementNamed(context, '/solo');
-                                    }
-                                  }
-                                } catch (e) {
-                                  print('Error claiming achievement: $e');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: const Text(
-                                'Claim Achievement',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return const SizedBox();
-                  },
-                ),
-                const SizedBox(height: 24),
                 AnimatedButton(
                   onPressed: () {
                     Navigator.pushReplacementNamed(context, '/solo');
@@ -442,21 +322,14 @@ class _MyPlay3State extends State<MyPlay3> {
                   height: MediaQuery.of(context).size.height * 0.07,
                   width: MediaQuery.of(context).size.width * 0.5,
                   color: Colors.blue.shade300,
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(35),
-                      ),
-                      child: const Text(
-                        'Back to Solo Mode',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
+                  child: const Text(
+                    'Back to Solo Mode',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
@@ -466,6 +339,50 @@ class _MyPlay3State extends State<MyPlay3> {
         );
       },
     );
+  }
+
+  Future<void> _claimAchievement() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('achievements')
+            .doc('ac1C1EOZ61X9t6GMmVzw')
+            .update({
+          'completedBy': FieldValue.arrayUnion([user.uid])
+        });
+
+        final playerDoc = FirebaseFirestore.instance
+            .collection('player')
+            .doc(user.uid);
+        
+        final playerSnapshot = await playerDoc.get();
+        final currentPoints = playerSnapshot.data()?['points'] ?? 0;
+        
+        await playerDoc.update({
+          'points': currentPoints + 300
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Achievement unlocked! +300 points'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error claiming achievement: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void showExplanationModal() {
@@ -512,6 +429,53 @@ class _MyPlay3State extends State<MyPlay3> {
         });
       }
     });
+  }
+
+  Widget _buildOptionContainer(Map<String, dynamic>? option) {
+    return GestureDetector(
+      onTap: option != null ? () {
+        setState(() {
+          selectedAnswer = option['id'];
+        });
+      } : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: selectedAnswer == option?['id'] ? Colors.green : Colors.white,
+          borderRadius: BorderRadius.circular(35),
+          border: Border.all(
+            color: selectedAnswer == option?['id']
+                ? Colors.green.shade700
+                : Colors.transparent,
+            width: 3,
+          ),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: option != null && option['imageBase64'] != null 
+              ? Image.memory(
+                  base64Decode(option['imageBase64']),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
+                )
+              : const Center(
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 40,
+                    color: Colors.grey,
+                  ),
+                ),
+        ),
+      ),
+    );
   }
 
   @override

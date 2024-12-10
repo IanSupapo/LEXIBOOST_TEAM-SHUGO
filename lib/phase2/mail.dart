@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
 class MyMail extends StatefulWidget {
-  const MyMail({super.key, required List notifications});
+  const MyMail({super.key, List? notifications}) : _notifications = notifications;
+
+  final List? _notifications;
 
   @override
   State<MyMail> createState() => _MyMailState();
@@ -184,14 +186,32 @@ class _MyMailState extends State<MyMail> {
 
               final messages = snapshot.data?.docs ?? [];
 
+              if (messages.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No messages yet',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                    ),
+                  ),
+                );
+              }
+
               return ListView.builder(
                 reverse: true,
                 padding: const EdgeInsets.all(16),
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
-                  final message = messages[index].data() as Map<String, dynamic>;
-                  final isMe = message['senderId'] == currentUser!.uid;
-                  final timestamp = message['timestamp'] as Timestamp;
+                  final messageData = messages[index].data() as Map<String, dynamic>;
+                  final isMe = messageData['senderId'] == currentUser!.uid;
+                  
+                  // Safely handle timestamp
+                  final timestamp = messageData['timestamp'];
+                  final messageTime = timestamp is Timestamp 
+                      ? DateFormat('HH:mm').format(timestamp.toDate())
+                      : 'Pending';
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -217,14 +237,14 @@ class _MyMailState extends State<MyMail> {
                                 : CrossAxisAlignment.start,
                             children: [
                               Text(
-                                message['text'],
+                                messageData['text'] ?? 'Empty message',
                                 style: TextStyle(
                                   color: isMe ? Colors.white : Colors.black,
                                   fontFamily: 'Poppins',
                                 ),
                               ),
                               Text(
-                                DateFormat('HH:mm').format(timestamp.toDate()),
+                                messageTime,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isMe

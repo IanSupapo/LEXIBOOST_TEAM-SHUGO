@@ -182,9 +182,11 @@ class _MyPlay2State extends State<MyPlay2> {
       showCorrectOverlay();
       
       if (currentQuestionIndex == questions.length - 1) {
-        // Show completion modal
-        Future.delayed(const Duration(milliseconds: 1200), () {
-          showCompletionModal();
+        // If it's the last question, claim achievement first then show completion modal
+        _claimAchievement().then((_) {
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            showCompletionDialog();
+          });
         });
       } else {
         Future.delayed(const Duration(milliseconds: 1200), () {
@@ -255,7 +257,8 @@ class _MyPlay2State extends State<MyPlay2> {
     });
   }
 
-  void showCompletionModal() {
+  // Simplified completion dialog without achievement UI
+  void showCompletionDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -299,143 +302,6 @@ class _MyPlay2State extends State<MyPlay2> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('achievements')
-                      .where('title', isEqualTo: 'Newbie')
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      // Create the achievement document if it doesn't exist
-                      FirebaseFirestore.instance.collection('achievements').add({
-                        'title': 'Newbie',
-                        'description': 'Complete Level 2 for the first time',
-                        'points': 100,
-                        'imageBase64': '', // Add your achievement image in base64
-                        'completedBy': [],
-                        'isClaimable': true,
-                        'isHidden': false,
-                      });
-                      return const SizedBox();
-                    }
-                    
-                    final achievement = snapshot.data!.docs.first;
-                    final completedBy = List<String>.from(achievement['completedBy'] ?? []);
-                    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                    
-                    if (!completedBy.contains(currentUserId)) {
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: Colors.green.shade300,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'Achievement Unlocked!',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Newbie',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Complete Level 2 for the first time',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 14,
-                                color: Colors.black54,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () async {
-                                try {
-                                  final user = FirebaseAuth.instance.currentUser;
-                                  if (user != null) {
-                                    // Update achievement
-                                    await achievement.reference.update({
-                                      'completedBy': FieldValue.arrayUnion([user.uid])
-                                    });
-
-                                    // Add 100 points to player
-                                    final playerDoc = FirebaseFirestore.instance
-                                        .collection('player')
-                                        .doc(user.uid);
-                                    
-                                    final playerSnapshot = await playerDoc.get();
-                                    final currentPoints = playerSnapshot.data()?['points'] ?? 0;
-                                    
-                                    await playerDoc.update({
-                                      'points': currentPoints + 100
-                                    });
-
-                                    // Show success message
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Achievement claimed! +100 points'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-
-                                    // Navigate back to solo screen
-                                    if (mounted) {
-                                      Navigator.pushReplacementNamed(context, '/solo');
-                                    }
-                                  }
-                                } catch (e) {
-                                  print('Error claiming achievement: $e');
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: ${e.toString()}'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              child: const Text(
-                                'Claim Achievement',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return const SizedBox();
-                  },
-                ),
-                const SizedBox(height: 24),
                 AnimatedButton(
                   onPressed: () {
                     Navigator.pushReplacementNamed(context, '/solo');
@@ -443,21 +309,14 @@ class _MyPlay2State extends State<MyPlay2> {
                   height: MediaQuery.of(context).size.height * 0.07,
                   width: MediaQuery.of(context).size.width * 0.5,
                   color: Colors.blue.shade300,
-                  child: Center(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(35),
-                      ),
-                      child: const Text(
-                        'Back to Solo Mode',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
+                  child: const Text(
+                    'Back to Solo Mode',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
@@ -513,6 +372,66 @@ class _MyPlay2State extends State<MyPlay2> {
         });
       }
     });
+  }
+
+  Future<void> _claimAchievement() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Get achievement document for "Newbie"
+        final achievementQuery = await FirebaseFirestore.instance
+            .collection('achievements')
+            .where('title', isEqualTo: 'Newbie')
+            .limit(1)  // Add limit to ensure we only get one document
+            .get();
+
+        if (achievementQuery.docs.isNotEmpty) {
+          final achievementDoc = achievementQuery.docs.first;
+          
+          // Check if user hasn't already completed this achievement
+          final completedBy = List<String>.from(achievementDoc.data()['completedBy'] ?? []);
+          if (!completedBy.contains(user.uid)) {
+            // Update achievement completion
+            await achievementDoc.reference.update({
+              'completedBy': FieldValue.arrayUnion([user.uid])
+            });
+
+            // Update player points
+            final playerDoc = FirebaseFirestore.instance
+                .collection('player')
+                .doc(user.uid);
+            
+            final playerSnapshot = await playerDoc.get();
+            final currentPoints = playerSnapshot.data()?['points'] ?? 0;
+            
+            await playerDoc.update({
+              'points': currentPoints + 100
+            });
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Achievement unlocked: Newbie! +100 points'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          }
+        } else {
+          print('Achievement "Newbie" not found in Firestore');
+        }
+      }
+    } catch (e) {
+      print('Error claiming achievement: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

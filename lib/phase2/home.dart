@@ -161,108 +161,111 @@ class MyHomePage extends StatelessWidget {
     final isLargeScreen = screenWidth > 600;
 
     // Calculate button dimensions based on screen size
-    final buttonWidth = isLargeScreen ? 300.0 : screenWidth * 0.4; // 300 if large, otherwise 40% of screen width
-    final buttonHeight = screenHeight * 0.5; // Set height to 20% of screen height
-    final fontSize = isLargeScreen ? 24.0 : screenWidth * 0.05; // 24 if large, otherwise change with screen width
-    final imageSize = isLargeScreen ? 150.0 : buttonWidth * 0.5; // 150 if large, otherwise change proportionally
+    final buttonWidth = isLargeScreen ? 250.0 : screenWidth * 0.35;
+    final buttonHeight = screenHeight * 0.35;
+    final fontSize = isLargeScreen ? 20.0 : screenWidth * 0.04;
+    final imageSize = isLargeScreen ? 120.0 : buttonWidth * 0.45;
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Top Text: "Lexi Boost"
-          const Padding(
-            padding: EdgeInsets.only(bottom: 20.0),
-            child: Text(
-              "Lexi Boost",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 64,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
-                color: Colors.white,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Top Text: "Lexi Boost"
+            const Padding(
+              padding: EdgeInsets.only(bottom: 20.0),
+              child: Text(
+                "Lexi Boost",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 64,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-          // Row of Buttons: SOLO ADVENTURE and VERSUS MODE
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Button: SOLO ADVENTURE
-              AnimatedButton(
-                width: buttonWidth, // Width dynamically set based on screen size
-                height: buttonHeight, // Height dynamically set based on screen size
-                onPressed: () {
-                  print("SOLO ADVENTURE button pressed");
-                  Navigator.pushNamed(context, '/solo');
-                },
-                color: Colors.white,
-                shadowDegree: ShadowDegree.light,
-                enabled: true,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: Text(
-                        "SOLO ADVENTURE",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+            // Row of Buttons: SOLO ADVENTURE and VERSUS MODE
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Button: SOLO ADVENTURE
+                AnimatedButton(
+                  width: buttonWidth, // Width dynamically set based on screen size
+                  height: buttonHeight, // Height dynamically set based on screen size
+                  onPressed: () {
+                    print("SOLO ADVENTURE button pressed");
+                    Navigator.pushNamed(context, '/solo');
+                  },
+                  color: Colors.white,
+                  shadowDegree: ShadowDegree.light,
+                  enabled: true,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10.0),
+                        child: Text(
+                          "SOLO ADVENTURE",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ),
-                    ),
-                    Image(
-                      image: const AssetImage('assets/solo-traveller.gif'),
-                      width: imageSize, // Width changes proportionally
-                      height: imageSize, // Height changes proportionally
-                      fit: BoxFit.cover,
-                    ),
-                  ],
+                      Image(
+                        image: const AssetImage('assets/solo-traveller.gif'),
+                        width: imageSize, // Width changes proportionally
+                        height: imageSize, // Height changes proportionally
+                        fit: BoxFit.cover,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 20), // Space between buttons
-              // Button: VERSUS MODE
-              AnimatedButton(
-                width: buttonWidth, // Width dynamically set based on screen size
-                height: buttonHeight, // Height dynamically set based on screen size
-                onPressed: () {
-                  print("VERSUS MODE button pressed");
-                  myHome.unlockAchievement(1);
-                  Navigator.pushNamed(context, '/versus');
-                },
-                color: Colors.white,
-                shadowDegree: ShadowDegree.light,
-                enabled: true,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10.0),
-                      child: Text(
-                        "VERSUS MODE",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Poppins',
+                const SizedBox(width: 20), // Space between buttons
+                // Button: VERSUS MODE
+                AnimatedButton(
+                  width: buttonWidth, // Width dynamically set based on screen size
+                  height: buttonHeight, // Height dynamically set based on screen size
+                  onPressed: () {
+                    print("VERSUS MODE button pressed");
+                    myHome.unlockAchievement(1);
+                    Navigator.pushNamed(context, '/versus');
+                  },
+                  color: Colors.white,
+                  shadowDegree: ShadowDegree.light,
+                  enabled: true,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10.0),
+                        child: Text(
+                          "VERSUS MODE",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ),
-                    ),
-                    Image(
-                      image: const AssetImage('assets/players.gif'),
-                      width: imageSize, // Width changes proportionally
-                      height: imageSize, // Height changes proportionally
-                      fit: BoxFit.cover,
-                    ),
-                  ],
+                      Image(
+                        image: const AssetImage('assets/players.gif'),
+                        width: imageSize, // Width changes proportionally
+                        height: imageSize, // Height changes proportionally
+                        fit: BoxFit.cover,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
