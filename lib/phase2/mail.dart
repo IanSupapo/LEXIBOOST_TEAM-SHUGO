@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 class MyMail extends StatefulWidget {
   const MyMail({super.key, List? notifications}) : _notifications = notifications;
 
+  // ignore: unused_field
   final List? _notifications;
 
   @override
